@@ -1,0 +1,5 @@
+docker-compose.yml
+.*.swp
+node_modules/
+.env
+npm-debug.log

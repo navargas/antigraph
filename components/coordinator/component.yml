@@ -1,0 +1,8 @@
+coordinator:
+    build: ./components/coordinator
+    ports:
+        - "80:80"
+        - "443:443"
+    links:
+        - authenticator
+        - registry_adapter
