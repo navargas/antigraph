@@ -1,3 +1,5 @@
+all : build
+
 build :
 	@cat $(shell find components -name 'component.yml') > docker-compose.yml
 	docker-compose build
@@ -6,7 +8,7 @@ clean :
 	@rm docker-compose.yml
 	docker-compose stop
 
-run : build
+run :
 	docker-compose up -d
 
 kill :
