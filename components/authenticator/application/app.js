@@ -41,6 +41,11 @@ function rejectAccess(req, res) {
     res.status(401).send({access:'no'});
 }
 
+function setInfoHeaders(keydoc, asset, res) {
+    res.header('X-AUTH-TEAM', keydoc.team);
+    res.header('X-AUTH-ASSET', asset);
+}
+
 function acceptNewAsset(service, keydoc, asset, req, res) {
     var db = cloudant.use(DBNAME);
     var asset = {
@@ -57,11 +62,13 @@ function acceptNewAsset(service, keydoc, asset, req, res) {
             return rejectAccess(req, res);
         }
         console.log(value);
+        setInfoHeaders(keydoc, asset, res);
         res.status(201).send({access:'ok', type:'new_asset'});
     })
 }
 
-function acceptAccess(req, res) {
+function acceptAccess(service, keydoc, asset, req, res) {
+    setInfoHeaders(keydoc, asset, res);
     res.status(201).send({access:'ok', type:'existing_asset'});
 }
 
@@ -125,7 +132,7 @@ app.post('/auth/:service/:asset/', function (req, res) {
                 console.error(err);
                 return rejectAccess(req, res);
             }
-            acceptAccess(req, res);
+            acceptAccess(service, keydoc, asset, req, res);
         });
     });
 });
