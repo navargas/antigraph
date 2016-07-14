@@ -1,5 +1,5 @@
 build :
-	@cat $(shell find components -name 'component.yml') >> docker-compose.yml
+	@cat $(shell find components -name 'component.yml') > docker-compose.yml
 	docker-compose build
 
 clean :
