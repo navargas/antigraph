@@ -1,2 +1,18 @@
 repo:
-    build: ./components/repo
+    build: ./components/repo/nginx
+    ports:
+        - "9090:9090"
+    volumes:
+        - /ssl/:/ssl/
+        - /var/asset-data/:/var/asset-data/
+    links:
+        - authenticator
+        - repo_adapter
+repo_adapter:
+    build: ./components/repo/node
+    ports:
+        - "9010:80"
+    volumes:
+        - /ssl/:/ssl/
+    links:
+        - authenticator
