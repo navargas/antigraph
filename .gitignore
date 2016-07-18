@@ -3,3 +3,4 @@ docker-compose.yml
 node_modules/
 .env
 npm-debug.log
+*.debug
