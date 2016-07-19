@@ -38,7 +38,8 @@ function testUnique(number, desc) {
 }
 
 function rejectAccess(req, res) {
-    res.status(401).send({access:'no'});
+    console.log('Rejected');
+    res.status(403).send({access:'no'});
 }
 
 function setInfoHeaders(keydoc, asset, res) {
@@ -47,6 +48,7 @@ function setInfoHeaders(keydoc, asset, res) {
 }
 
 function acceptNewAsset(service, keydoc, asset, req, res) {
+    console.log('Accepted');
     var db = cloudant.use(DBNAME);
     var asset = {
         type: 'asset',
@@ -83,7 +85,7 @@ function getKeyDoc(key, callback) {
     db.search('design', 'typeValue', query, function(err, value) {
         if (err) return callback(err);
         // if there are no rows return does_not_exist
-        if (value.total_rows === 0) return callback({error:'does_not_exist'});
+        if (value.total_rows === 0) return callback({error:'key_does_not_exist'});
         testUnique(value.total_rows, 'api key in getKeyDoc');
         // If there is a result (will be only one unique doc) return it
         callback(null, value.rows[0].doc);
@@ -111,11 +113,13 @@ app.get('/', function (req, res) {
     res.send({version:'v1.0.0', service:'authenticator'});
 });
 
-app.post('/auth/:service/:asset/', function (req, res) {
+function authReq(req, res) {
     var db = cloudant.use(DBNAME);
-    var key = req.body.key;
+    console.log(req.body);
+    var key = req.body.key || req.query.key || req.headers['x-api-key'];
     var service = req.params.service;
     var asset = req.params.asset;
+    console.log('Request for <%s>/%s using %s', service, asset, key);
     getKeyDoc(key, function(err, keydoc) {
         if (err) {
             console.error(err);
@@ -135,7 +139,14 @@ app.post('/auth/:service/:asset/', function (req, res) {
             acceptAccess(service, keydoc, asset, req, res);
         });
     });
-});
+}
+
+/* for debug */
+app.post('/reject/:service/:asset/', rejectAccess);
+app.get('/reject/:service/:asset/', rejectAccess);
+
+app.post('/auth/:service/:asset/', authReq);
+app.get('/auth/:service/:asset/', authReq);
 
 app.listen(PORT, function () {
     console.log('Started on port', PORT);
