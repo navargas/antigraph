@@ -1,4 +1,6 @@
 var express = require('express');
+var path = require('path');
+var mkdirp = require('mkdirp');
 var querystring = require('querystring');
 var multer = require('multer');
 var bodyParser = require('body-parser');
@@ -14,6 +16,7 @@ app.use(bodyParser.urlencoded({extended:true}));
 
 var PORT = process.env.PORT || 80;
 
+/* httpPost used for communicating with authenticator */
 function httpPost(hostname, path, port, params, callback) {
     if (!params) params = {};
     var postData = querystring.stringify(params);
@@ -27,7 +30,7 @@ function httpPost(hostname, path, port, params, callback) {
             'Content-Length': postData.length
         }
     };
-    /* send http post to hostname:port */
+    // Send http post to hostname:port
     var buffer = '';
     var req = http.request(httpReq, function(res) {
         res.setEncoding('utf8');
@@ -43,6 +46,7 @@ function httpPost(hostname, path, port, params, callback) {
     req.end();
 }
 
+/* Generic fail response */
 function fail(res, message, statusCode) {
     var sc = statusCode || 501;
     res.status(sc).send({
@@ -52,53 +56,62 @@ function fail(res, message, statusCode) {
 
 function uploadFileTarget(req, res) {
     var asset = req.params.assetName;
+    var version = req.params.versionName;
+    // x-api-key header must be set
     var key = req.headers['x-api-key'];
     if (!asset) return fail(res, 'Asset name field empty');
     if (!key) return fail(res, 'X-API-KEY not set', 401);
-    var authUrl = 'http://authenticator/repo/' + asset;
-}
-
-function uploadFileTarget(req, res) {
-    /* Store asset in [storageDir]/team/asset/version/filename.ext */
-    var assetPath = path.join(
-        conf.storageDir,
-        req.params.assetName
-    );
-    var fileName = req.params.assetName;
-    if (!fs.existsSync(assetPath)){
-        fs.mkdirSync(assetPath);
+    var group = 'group_dne';
+    // attempting to get a path with also create the path
+    function getPath(file) {
+        var targetPath = path.join(
+            conf.storageDir,
+            group,
+            asset,
+            version
+        );
+        mkdirp.sync(targetPath, 600);
+        return targetPath;
     }
-    /* Create fs storage callbacks */
+    // store the asset in /var/assets/teamname/assetname/version/filename.ext
     var storage = multer.diskStorage({
         destination: function (req, file, callback) {
-            callback(null, assetPath);
+            callback(null, getPath(file));
         },
         filename: function (req, file, callback) {
-            var params = [
-                req.params.assetName,   // asset name
-                req.params.versionName, // version
-                file.originalname       // displayName
-            ];
-            db().run(SQL_NEW_FILE, params, function(err) {
-                if (err)
-                    return callback(err);
-                else
-                    return callback(null, req.params.versionName);
-            });
+            var filename = file.originalname || 'filename_dne';
+            return callback(null, filename);
         }
     });
-    /* multer(...).single(<filename>) returns a middleware router */
-    multer({storage: storage}).single('upload')(req, res, function(err) {
-        if (err) {
-            return res.status(500).send(
-                {error: 'There was an issue uploading the file'}
-            );
+    var params = {key: key};
+    var url = '/auth/repo/' + asset;
+    // Fetch the team info from the authenticator
+    // Any non-201 status suggests that the user does not have access
+    // to the asset.
+    httpPost('authenticator', url, 80, params, function(statusCode, data) {
+        if (statusCode !== 201) return res.status(statusCode).send(data);
+        var info;
+        // The authenticator returns some necessary information in a JSON
+        // format. If the response is malformed or missing data, the upload
+        // will be blocked.
+        try {
+            info = JSON.parse(data);
+        } catch (e) {
+            info = undefined;
         }
-        res.syncTarget = fileName;
-        return res.send({status: 'ok'});
+        if (!info || !info.team) return res.status(statusCode).send(data);
+        // group from function scope
+        group = info.team;
+        // the actual upload
+        multer({storage: storage}).single('upload')(req, res, function(err) {
+            if (err) {
+                var errorMsg = {error: 'There was an issue uploading the file'};
+                return res.status(500).send(errorMsg);
+            }
+            return res.send({status: 'ok'});
+        });
     });
 }
-
 
 /* for debug */
 app.get('/auth', function(req, res) {
@@ -115,8 +128,10 @@ app.get('/reject', function(req, res) {
     res.status(401).send({auth:'no'});
 });
 
-app.post('/upload', uploadFileTarget);
+/* actual targets */
+app.post('/assets/:assetName/:versionName', uploadFileTarget);
 
+/* start server */
 app.listen(PORT, function () {
     console.log('Started on port', PORT);
 });

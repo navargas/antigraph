@@ -45,6 +45,7 @@ function rejectAccess(req, res) {
 function setInfoHeaders(keydoc, asset, res) {
     res.header('X-AUTH-TEAM', keydoc.team);
     res.header('X-AUTH-ASSET', asset);
+    return {team: keydoc.team, asset: asset};
 }
 
 function acceptNewAsset(service, keydoc, asset, req, res) {
@@ -64,14 +65,19 @@ function acceptNewAsset(service, keydoc, asset, req, res) {
             return rejectAccess(req, res);
         }
         console.log(value);
-        setInfoHeaders(keydoc, asset, res);
-        res.status(201).send({access:'ok', type:'new_asset'});
+        var info = setInfoHeaders(keydoc, asset, res);
+        info.access = 'ok';
+        info.type = 'new_asset';
+        res.status(201).send(info);
     })
 }
 
 function acceptAccess(service, keydoc, asset, req, res) {
     setInfoHeaders(keydoc, asset, res);
-    res.status(201).send({access:'ok', type:'existing_asset'});
+    var info = setInfoHeaders(keydoc, asset, res);
+    info.access = 'ok';
+    info.type = 'existing_asset';
+    res.status(201).send(info);
 }
 
 function typeQuery(type, val) {

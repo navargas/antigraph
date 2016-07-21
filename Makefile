@@ -10,7 +10,7 @@ clean :
 
 running :
 	@docker ps --format '{{.Names}}'
-	@docker ps --format '{{.Names}}' | wc -l
+	@docker ps --format '{{.Names}}' | wc -l | tr -d ' '
 
 run : build
 	docker-compose up -d
