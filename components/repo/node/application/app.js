@@ -1,4 +1,5 @@
 var express = require('express');
+var fs = require('fs');
 var path = require('path');
 var mkdirp = require('mkdirp');
 var querystring = require('querystring');
@@ -61,6 +62,7 @@ function uploadFileTarget(req, res) {
     var key = req.headers['x-api-key'];
     if (!asset) return fail(res, 'Asset name field empty');
     if (!key) return fail(res, 'X-API-KEY not set', 401);
+    if (!version) return fail(res, 'Version name field empty');
     var group = 'group_dne';
     // attempting to get a path with also create the path
     function getPath(file) {
@@ -105,10 +107,72 @@ function uploadFileTarget(req, res) {
         // the actual upload
         multer({storage: storage}).single('upload')(req, res, function(err) {
             if (err) {
-                var errorMsg = {error: 'There was an issue uploading the file'};
+                var errorMsg = {error:'There was an issue uploading the file'};
                 return res.status(500).send(errorMsg);
             }
             return res.send({status: 'ok'});
+        });
+    });
+}
+
+function fileInfoHeaders(req, res) {
+    var asset = req.params.assetName;
+    var version = req.params.versionName;
+    // x-api-key header must be set
+    var key = req.headers['x-api-key'];
+    var fileRequestHeader = req.headers['x-file-request'];
+    if (!asset) return fail(res, 'Asset name field empty');
+    if (!key) return fail(res, 'X-API-KEY not set', 401);
+    if (!version) return fail(res, 'Version name field empty');
+    var group = 'group_dne';
+    var params = {key: key};
+    var url = '/auth/repo/' + asset;
+    httpPost('authenticator', url, 80, params, function(statusCode, data) {
+        if (statusCode !== 201) return res.status(statusCode).send(data);
+        var info;
+        try {
+            info = JSON.parse(data);
+        } catch (e) {
+            info = undefined;
+            console.error('Parse error on:', data);
+        }
+        if (!info || !info.team) return res.status(statusCode).send(data);
+        group = info.team;
+        var targetPath = path.join(
+            conf.storageDir,
+            group,
+            asset,
+            version
+        );
+        res.setHeader('X-AUTH-TEAM', group);
+        res.setHeader('X-AUTH-ASSET', asset);
+        res.setHeader('X-AUTH-VERSION', version);
+        fs.readdir(targetPath, function(err, files) {
+            if (err && err.code == 'ENOENT') return res.status(404).send({
+                asset:asset,
+                version:version,
+                error: 'Asset/version not found on this server!'
+            });
+            if (err) return res.status(501).send(err);
+            if (files.length == 0) return res.status(404);
+            var fileInFiles = (files.indexOf(fileRequestHeader) >= 0);
+            if (files.length > 1 && !fileInFiles) return res.status(501).send({
+                error: 'Multiple files found. Please specify a file in ' +
+                       'the X-FILE-REQUEST header.',
+                files: files,
+                not_found: fileRequestHeader
+            });
+            var filename = files[0];
+            // it's possible to pick a file from a particular asset
+            // it is not yet determined if this should be possible
+            if (fileInFiles) filename = fileRequestHeader;
+            res.setHeader('X-AUTH-FILENAME', filename);
+            res.status(201).send({
+                team:group,
+                asset:asset,
+                version:version,
+                filename:filename
+            });
         });
     });
 }
@@ -130,6 +194,7 @@ app.get('/reject', function(req, res) {
 
 /* actual targets */
 app.post('/assets/:assetName/:versionName', uploadFileTarget);
+app.get('/assets/:assetName/:versionName', fileInfoHeaders);
 
 /* start server */
 app.listen(PORT, function () {
