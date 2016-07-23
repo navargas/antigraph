@@ -14,5 +14,6 @@ repo_adapter:
         - "9010:80"
     volumes:
         - /ssl/:/ssl/
+        - /var/asset-data/:/var/asset-data/
     links:
         - authenticator

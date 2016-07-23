@@ -72,7 +72,7 @@ function uploadFileTarget(req, res) {
             asset,
             version
         );
-        mkdirp.sync(targetPath, 600);
+        mkdirp.sync(targetPath, 666);
         return targetPath;
     }
     // store the asset in /var/assets/teamname/assetname/version/filename.ext
@@ -127,6 +127,7 @@ function fileInfoHeaders(req, res) {
     var group = 'group_dne';
     var params = {key: key};
     var url = '/auth/repo/' + asset;
+    console.log('New get,', asset, version, key);
     httpPost('authenticator', url, 80, params, function(statusCode, data) {
         if (statusCode !== 201) return res.status(statusCode).send(data);
         var info;
