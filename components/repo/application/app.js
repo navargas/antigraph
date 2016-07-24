@@ -72,7 +72,7 @@ function uploadFileTarget(req, res) {
             asset,
             version
         );
-        mkdirp.sync(targetPath, 666);
+        mkdirp.sync(targetPath, 0777);
         return targetPath;
     }
     // store the asset in /var/assets/teamname/assetname/version/filename.ext
