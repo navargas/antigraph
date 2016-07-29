@@ -1,7 +1,5 @@
 repo:
     build: ./components/repo/nginx
-    ports:
-        - "9090:9090"
     volumes:
         - /ssl/:/ssl/
         - /var/asset-data/:/var/asset-data/
