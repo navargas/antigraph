@@ -5,4 +5,4 @@ coordinator:
         - "443:443"
     links:
         - authenticator
-        - registry_adapter
+        - registry_nginx

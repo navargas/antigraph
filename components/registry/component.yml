@@ -1,6 +1,6 @@
 registry:
     image: docker.io/distribution/registry:latest
-registry_adapter:
+registry_nginx:
     build: ./components/registry
     links:
         - registry
