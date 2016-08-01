@@ -14,7 +14,6 @@ running :
 
 run : build
 	docker-compose up -d
-	@sleep 1
 	-@rm -f .failed.debug
 	$(eval R = $(shell cat docker-compose.yml \
 	   | grep '^[a-zA-Z0-9]' \

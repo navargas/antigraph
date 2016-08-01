@@ -1,6 +1,10 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var fmt = require('util').format;
+
+var uriNoTeam = /^\/v2\/([a-z0-9]+(?:[._-][a-z0-9]+)*.)\/(manifests|blobs|tags)\/.*$/;
+var uriValid = /^\/v2\/([a-z0-9\-]+(?:[._-][a-z0-9]+)*.)\/([a-z0-9\-]+(?:[._-][a-z0-9]+)*.)\/(manifests|blobs|tags)\/.*$/;
+
 require('dotenv').config();
 
 var dbauth = {
@@ -81,19 +85,31 @@ function acceptAccess(service, keydoc, asset, req, res) {
 }
 
 function typeQuery(type, val) {
-    var query = {q:fmt('type:"%s" AND value:"%s"', type, val), include_docs:true};
+    var query = {
+        q: fmt('type:"%s" AND value:"%s"', type, val),
+        include_docs: true
+    };
     return query;
 }
 
+var keyCache = {};
 function getKeyDoc(key, callback) {
     var db = cloudant.use(DBNAME);
     var query = typeQuery('key', key);
+    var now = Date.now();
+    var tenMin = 1000 * 60 * 10;
+    if (keyCache[key] && keyCache[key].expire > now) {
+        console.log('Cache hit', key, 'expires', keyCache[key].expire);
+        return callback(null, keyCache[key].doc);
+    }
     db.search('design', 'typeValue', query, function(err, value) {
         if (err) return callback(err);
         // if there are no rows return does_not_exist
-        if (value.total_rows === 0) return callback({error:'key_does_not_exist'});
+        if (value.total_rows === 0)
+            return callback({error:'key_does_not_exist'});
         testUnique(value.total_rows, 'api key in getKeyDoc');
         // If there is a result (will be only one unique doc) return it
+        keyCache[key] = {expire: Date.now() + tenMin, doc: value.rows[0].doc};
         callback(null, value.rows[0].doc);
     });
 }
@@ -108,7 +124,8 @@ function getAsset(team, service, asset, callback) {
     db.search('design', 'typeValueTeamService', query, function(err, value) {
         if (err) return callback(err);
         // if there are no rows return does_not_exist
-        if (value.total_rows === 0) return callback({error:'asset_does_not_exist'});
+        if (value.total_rows === 0)
+            return callback({error:'asset_does_not_exist'});
         testUnique(value.total_rows, 'assets in getAsset');
         // If there is a result (will be only one unique doc) return it
         callback(null, value.rows[0].doc);
@@ -147,12 +164,61 @@ function authReq(req, res) {
     });
 }
 
+function uriAuth(req, res) {
+    var uri = req.headers['x-original-uri'];
+    if (!req.headers || !req.headers.authorization) {
+        console.log('headers', req.headers);
+        res.append('WWW-Authenticate', 'Basic');
+        return res.status(401).end();
+    }
+    var auth = req.headers.authorization;
+    var decode = new Buffer(auth.split(' ')[1], 'base64').toString('ascii');
+    var username = decode.split(':')[0];
+    var key = decode.split(':')[1];
+    console.log(username, key, uri);
+    // if the user is doing a non-action, like catalog or ping, allow
+    if (uri == '/v2/' || uri == '/v2/_catalog') {
+        return res.status(201).end();
+    }
+    // if the user is attempting to upload a team-less image, block
+    if (uriNoTeam.test(uri)) {
+        console.log('Team not found', uri);
+        return rejectAccess(req, res);
+    }
+    // finnally if the uri is invalid, reject
+    if (!uriValid.test(uri)) {
+        console.log('Invalid URI', uri);
+        return rejectAccess(req, res);
+    }
+    var match = uriValid.exec(uri);
+    var team = match[1];
+    var asset = match[2];
+    var service = 'docker';
+    getKeyDoc(key, function(err, keydoc) {
+        if (err) {
+            console.error(err);
+            return rejectAccess(req, res);
+        }
+        if (!keydoc.valid) {
+            return rejectAccess(req, res);
+        }
+        if (keydoc.team != team) {
+            console.error('Team mis-match', team, keydoc.team);
+            return rejectAccess(req, res);
+        }
+        return res.status(201).end();
+    });
+}
+
 /* for debug */
 app.post('/reject/:service/:asset/', rejectAccess);
 app.get('/reject/:service/:asset/', rejectAccess);
 
 app.post('/auth/:service/:asset/', authReq);
 app.get('/auth/:service/:asset/', authReq);
+
+app.post('/uriauth', uriAuth);
+app.get('/uriauth', uriAuth);
 
 app.listen(PORT, function () {
     console.log('Started on port', PORT);

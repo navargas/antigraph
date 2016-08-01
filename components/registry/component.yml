@@ -4,5 +4,6 @@ registry_adapter:
     build: ./components/registry
     links:
         - registry
+        - authenticator
     ports:
         - "9090:443"
