@@ -10,6 +10,8 @@ repo:
         - repo_adapter
 repo_adapter:
     build: ./components/repo/node
+    ports:
+        - "9060:80"
     volumes:
         - /dockervolumes/ssl/:/ssl/
         - /dockervolumes/asset-data/:/var/asset-data/

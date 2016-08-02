@@ -178,6 +178,39 @@ function fileInfoHeaders(req, res) {
     });
 }
 
+function getVersions(team, asset, callback) {
+    var targetPath = path.join(conf.storageDir, team, asset);
+    fs.readdir(targetPath, callback);
+}
+
+function getImagesByTeam(team, callback) {
+    var targetPath = path.join(conf.storageDir, team);
+    var result = [];
+    fs.readdir(targetPath, function(err, dir) {
+        if (err) return callback(err);
+        for (var index in dir) {
+            var asset = dir[index];
+            (function(asset) {getVersions(team, asset, function(err, vers) {
+                result.push({name:asset, versions:vers});
+                if (result.length == dir.length) callback(undefined, result);
+            })})(asset);
+        }
+    });
+}
+
+function listImages(req, res) {
+    var team = req.params.teamname; 
+    var error;
+    getImagesByTeam(team, function (err, images) {
+        if (err) {
+            error = err;
+            console.error(err);
+        }
+        res.send({error:error, assets:images});
+    });
+}
+
+
 /* for debug */
 app.get('/auth', function(req, res) {
     var params = {key: 'abc'};
@@ -196,6 +229,8 @@ app.get('/reject', function(req, res) {
 /* actual targets */
 app.post('/assets/:assetName/:versionName', uploadFileTarget);
 app.get('/assets/:assetName/:versionName', fileInfoHeaders);
+
+app.get('/list/:teamname?', listImages);
 
 /* start server */
 app.listen(PORT, function () {
