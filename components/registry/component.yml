@@ -11,3 +11,7 @@ registry_adapter:
     build: ./components/registry/adapter
     volumes:
         - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+        - "9050:80"
+    links:
+        - registry
