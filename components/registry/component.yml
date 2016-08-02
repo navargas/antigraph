@@ -1,9 +1,13 @@
 registry:
     image: docker.io/distribution/registry:latest
 registry_nginx:
-    build: ./components/registry
+    build: ./components/registry/nginx
     links:
         - registry
         - authenticator
     ports:
         - "9090:443"
+registry_adapter:
+    build: ./components/registry/adapter
+    volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
