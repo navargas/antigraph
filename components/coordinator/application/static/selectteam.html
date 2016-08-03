@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+<link href='https://fonts.googleapis.com/css?family=Roboto:400,100,200,300'
+  rel='stylesheet' type='text/css'>
+<link rel='stylesheet' href='/css/style.css'>
+<div id="content">
+<!-- content -->
+
+<h2>Cumulus Repo V2 Beta</h2>
+<hr>
+<p v-if="errorMsg" v-cloak class="errormessage">{{errorMsg}}</p>
+<h1>Select a Team</h1>
+<table class="table table-bordered">
+  <thead>
+    <tr><th>Team Name</th><th>Creator</th></tr>
+  </thead>
+  <tbody>
+    <tr v-for="team in teams">
+      <td>{{team.name}}</td><td>{{team.creator}}</td>
+    </tr>
+  </tbody>
+</table>
+<form class="loginform" action="/newteam" method="post">
+  <h1>Or Create a New Team</h1>
+  <input type="text" placeholder="Team Name" name="team" />
+  <button>Create</button>
+</form>
+
+<!-- end content -->
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.25/vue.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-resource/0.9.3/vue-resource.min.js"></script>
+<script src="/js/common.js"></script>
+<script>
+var VMain = new Vue({
+  el: '#content',
+  ready: function() {
+    var teams = this.$resource('/teams');
+    this.errorMsg = getParameterByName('error');
+    teams.get().then((response) => {this.teams = response.json()});
+  },
+  methods: {
+  },
+  data: {
+    errorMsg: false,
+    teams: []
+  }
+});
+</script>

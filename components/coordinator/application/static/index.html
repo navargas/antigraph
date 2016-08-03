@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+
+<link href='https://fonts.googleapis.com/css?family=Roboto:400,100,200,300'
+  rel='stylesheet' type='text/css'>
+<link rel='stylesheet' href='/css/style.css'>
+<div id="content">
+<!-- content -->
+
+<h2>Cumulus Repo V2 Beta</h2>
+<hr>
+<p v-if="errorMsg" v-cloak class="errormessage">{{errorMsg}}</p>
+<div class="login">
+  <form class="loginform" action="/login" method="POST">
+    <h1>Generate New API Key</h1>
+    <input type=text placeholder="email" name="email" />
+    <input type=password placeholder="password" name="password" />
+    <button>Submit</button>
+  </form>
+  <form class="loginform">
+    <h1>Or Import Existing Key</h1>
+    <input type=password placeholder="API Key" />
+    <button>Submit</button>
+  </form>
+</div>
+
+<!-- end content -->
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.25/vue.min.js"></script>
+<script src="/js/common.js"></script>
+<script>
+var VMain = new Vue({
+  el: '#content',
+  ready: function() {
+    this.errorMsg = getParameterByName('error');
+  },
+  methods: {
+  },
+  data: {
+    errorMsg: false
+  }
+});
+</script>

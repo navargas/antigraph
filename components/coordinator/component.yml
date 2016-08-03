@@ -3,6 +3,9 @@ coordinator:
     ports:
         - "80:80"
         - "443:443"
+    environment:
+        - USE=repo_adapter/Binary Repo+registry_adapter/Docker Registry
     links:
         - authenticator
-        - registry_nginx
+        - registry_adapter
+        - repo_adapter

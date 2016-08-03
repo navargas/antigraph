@@ -1,0 +1,22 @@
+{
+  "name": "coordinator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "nv",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "cloudant": "^1.4.2",
+    "dotenv": "^2.0.0",
+    "express": "^4.14.0",
+    "express-session": "^1.14.0",
+    "passport": "^0.3.2",
+    "passport-ldapauth": "^0.5.0",
+    "request": "^2.74.0"
+  }
+}
