@@ -1,5 +1,5 @@
 registry:
-    image: docker.io/distribution/registry:latest
+    image: registry:2.5
 registry_nginx:
     build: ./components/registry/nginx
     links:

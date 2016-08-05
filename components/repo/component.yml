@@ -8,6 +8,7 @@ repo:
     links:
         - authenticator
         - repo_adapter
+        - registry_nginx
 repo_adapter:
     build: ./components/repo/node
     ports:
