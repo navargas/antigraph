@@ -3,6 +3,6 @@ FROM node:latest
 RUN npm install forever -g
 ADD application /application
 WORKDIR /application
-#RUN npm install
+RUN npm install
 EXPOSE 9010
 CMD forever app.js
