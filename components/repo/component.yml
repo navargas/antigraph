@@ -1,18 +1,17 @@
 repo:
     build: ./components/repo/nginx
     ports:
-        - "9010:9090"
+        - "443:9090"
     volumes:
         - /dockervolumes/ssl/:/ssl/
         - /dockervolumes/asset-data/:/var/asset-data/
     links:
         - authenticator
         - repo_adapter
-        - registry_nginx
+        - registry
+        - coordinator
 repo_adapter:
     build: ./components/repo/node
-    ports:
-        - "9060:80"
     volumes:
         - /dockervolumes/ssl/:/ssl/
         - /dockervolumes/asset-data/:/var/asset-data/

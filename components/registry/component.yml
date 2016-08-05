@@ -1,17 +1,17 @@
 registry:
     image: registry:2.5
+    volumes:
+        - /dockervolumes/registry/:/tmp/registry-dev/
 registry_nginx:
     build: ./components/registry/nginx
+    ports:
+        - "9445:443"
     links:
         - registry
         - authenticator
-    ports:
-        - "9090:443"
 registry_adapter:
     build: ./components/registry/adapter
     volumes:
         - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-        - "9050:80"
     links:
         - registry

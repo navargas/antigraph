@@ -1,8 +1,5 @@
 coordinator:
     build: ./components/coordinator
-    ports:
-        - "80:80"
-        - "443:443"
     environment:
         - USE=repo_adapter/Binary Repo+registry_adapter/Docker Registry
         - LDAPFAIL=snakesnake
