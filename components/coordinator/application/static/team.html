@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+<link href='https://fonts.googleapis.com/css?family=Roboto:400,100,200,300'
+  rel='stylesheet' type='text/css'>
+<link rel='stylesheet' href='/css/style.css'>
+<div id="content">
+<!-- content -->
+
+<h2>Cumulus Repo V2 Beta</h2>
+<hr>
+<p v-if="errorMsg" v-cloak class="errormessage">{{errorMsg}}</p>
+<h1>Assets</h1>
+<p v-if="assets.length == 0">None Found</p>
+<div v-for="assetGroup in assets">
+  <h3>{{assetGroup.service}}</h3>
+  <table class="table table-bordered">
+    <tbody>
+      <tr v-for="asset in assetGroup.assets"
+          v-on:click="showVersions(assetGroup.service, $index)">
+        <td>
+          {{asset.name}}
+          <table class="table table-bordered"
+              v-if="activeGroup == assetGroup.service && activeAsset == $index">
+            <tbody>
+              <tr v-for="version in asset.versions" class="nohl">
+                <td>{{version}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<h1>Team Members</h1>
+<p v-if="members.length == 0">None Found</p>
+<table class="table table-bordered">
+  <tbody>
+    <tr v-for="member in members">
+      <td class="nohl noclick">{{member}}</td>
+    </tr>
+    <tr>
+      <td class="dim" v-on:click.stop.prevent="toggleEmailField()">
+        Add New Member
+        <form class="loginform nomargin" action="/members" 
+              method="POST" v-if="showEmailForm" v-on:click.stop="">
+          <input type="text" placeholder="email address" name="email" />
+          <button>Submit</button>
+        </form>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<a href="/signout" class="hrefaction">sign out</a>
+<a v-on:click="deleteteam()" class="hrefaction">delete team</a>
+
+<!-- end content -->
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.25/vue.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-resource/0.9.3/vue-resource.min.js"></script>
+<script src="/js/common.js"></script>
+<script>
+var UPDATE=1000 * 5;//ms
+var VMain = new Vue({
+  el: '#content',
+  ready: function() {
+    var members = this.$resource('/members');
+    var assets = this.$resource('/digest');
+    if (getCookie('signal_key')) {
+      var key = getCookie('apikey');
+      var t = prompt('Copy this key and save it', key);
+      eraseCookie('signal_key');
+    };
+    this.errorMsg = getParameterByName('error');
+    members.get().then((response) => {this.members = response.json()});
+    assets.get().then((response) => {this.assets = response.json()});
+    /* Update info every UPDATE seconds */
+    /*setInterval(function() {
+      assets.get().then((response) => {
+        Vue.set(this.assets, 'items', response.json());
+      });
+    }, UPDATE);*/
+  },
+  methods: {
+    toggleEmailField: function() {
+      this.showEmailForm = !this.showEmailForm;
+    },
+    showVersions: function(group, asset) {
+      if (group === this.activeGroup && asset === this.activeAsset) {
+        this.activeAsset = null;
+        this.activeGroup = null;
+        return;
+      }
+      this.activeAsset = asset;
+      this.activeGroup = group;
+    },
+    deleteteam: function() {
+      var t = confirm('Are you sure you wish to delete this team?');
+      if (t) {
+        this.$resource('/team').delete().then(()=>{window.location='/signout'});
+      }
+    }
+  },
+  data: {
+    errorMsg: false,
+    activeGroup: null,
+    activeAsset: null,
+    members: [],
+    assets: [],
+    showEmailForm: false,
+    activeAsset: null
+  }
+});
+</script>

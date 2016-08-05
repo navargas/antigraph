@@ -24,10 +24,15 @@ h1 {
 }
 
 tbody > tr:hover {
-    background-color: rgba(0, 126, 255, 0.1);
-    cursor: pointer;
+  background-color: rgba(0, 126, 255, 0.1);
+  cursor: pointer;
 }
-
+.noclick {
+  cursor: default !important;
+}
+.nohl {
+  background-color: white !important;
+}
 button {
   color: rgba(0, 0, 0, 0.75);
   background-color: white;
@@ -40,4 +45,13 @@ button {
 }
 .errormessage {
   color: red;
+}
+.dim {
+  opacity: .50;
+}
+.hrefaction {
+  margin-right: 15px; 
+}
+.nomargin {
+  margin: 0px;
 }

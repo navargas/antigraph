@@ -16,7 +16,7 @@
     <tr><th>Team Name</th><th>Creator</th></tr>
   </thead>
   <tbody>
-    <tr v-for="team in teams">
+    <tr v-for="team in teams" v-on:click="navigate(team.name)">
       <td>{{team.name}}</td><td>{{team.creator}}</td>
     </tr>
   </tbody>
@@ -27,6 +27,7 @@
   <button>Create</button>
 </form>
 
+<a href="/signout">back</a>
 <!-- end content -->
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.25/vue.min.js"></script>
@@ -41,6 +42,9 @@ var VMain = new Vue({
     teams.get().then((response) => {this.teams = response.json()});
   },
   methods: {
+    navigate: function(target) {
+      window.location = '/createkey/' + target;
+    }
   },
   data: {
     errorMsg: false,

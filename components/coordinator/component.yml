@@ -5,6 +5,7 @@ coordinator:
         - "443:443"
     environment:
         - USE=repo_adapter/Binary Repo+registry_adapter/Docker Registry
+        - LDAPFAIL=snakesnake
     links:
         - authenticator
         - registry_adapter
