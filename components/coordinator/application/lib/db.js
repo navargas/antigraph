@@ -1,12 +1,12 @@
 var cloudant;
 var DBNAME = 'antigraph';
-require('dotenv').config();
 
 var dbauth = {
     account: process.env.CLOUDANT_ACCOUNT,
     username: process.env.CLOUDANT_ACCOUNT,
     password: process.env.CLOUDANT_PASSWORD
 }
+console.log(dbauth);
 function connect() {
     require('cloudant')(dbauth, function(err, dbcon) {
         if (err) {

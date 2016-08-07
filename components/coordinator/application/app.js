@@ -133,6 +133,10 @@ function teamManifest(team, callback) {
     }
 }
 
+function pollEnv(callback) {
+    var cluster = process.env.GEO.split('+');
+}
+
 function createTeam(name, creator, callback) {
     var luc = fmt('type:"team" AND value:"%s"', name);
     var query = {q:luc, include_docs:true};
@@ -166,8 +170,8 @@ function createTeam(name, creator, callback) {
 }
 
 var services = [];
-if (process.env.USE)
-    services = process.env.USE.split('+');
+if (process.env.SERVICES)
+    services = process.env.SERVICES.split('+');
 
 app.post('/login', function(req, res) {
     var email = req.body.email;
@@ -323,7 +327,14 @@ app.get('/teams', function(req, res) {
         res.status(200).send(result);
     });
 });
-
+app.get('/manifest', function(req, res) {
+    getKeyDoc(req.session.key, function(err, keydoc) {
+        if (err) return res.status(501).send(err);
+        getAllAssets(services, keydoc.team, function(data) {
+            res.send(data);
+        });
+    });
+});
 app.get('/digest', function(req, res) {
     getKeyDoc(req.session.key, function(err, keydoc) {
         if (err) return res.status(501).send(err);

@@ -1,7 +1,12 @@
 coordinator:
     build: ./components/coordinator
     environment:
-        - USE=repo_adapter/Binary Repo+registry_adapter/Docker Registry
+        - SERVICES=${SERVICES}
+        - GEO=${GEO}
+        - DOMAIN=${DOMAIN}
+        - DEBUG=${DEBUG}
+        - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
+        - CLOUDANT_PASSWORD=${CLOUDANT_PASSWORD}
     links:
         - authenticator
         - registry_adapter

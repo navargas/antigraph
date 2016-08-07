@@ -5,8 +5,6 @@ var fmt = require('util').format;
 var uriNoTeam = /^\/v2\/([a-z0-9]+(?:[._-][a-z0-9]+)*.)\/(manifests|blobs|tags)\/.*$/;
 var uriValid = /^\/v2\/([a-z0-9\-]+(?:[._-][a-z0-9]+)*.)\/([a-z0-9\-]+(?:[._-][a-z0-9]+)*.)\/(manifests|blobs|tags)\/.*$/;
 
-require('dotenv').config();
-
 var dbauth = {
     account: process.env.CLOUDANT_ACCOUNT,
     username: process.env.CLOUDANT_ACCOUNT,
