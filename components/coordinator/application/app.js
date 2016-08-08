@@ -236,11 +236,11 @@ function formDigestData(all, serviceLegend) {
 }
 
 var services = [];
+var SERVICES = [];
 if (process.env.SERVICES) {
     services = process.env.SERVICES.split('+');
     SERVICES = process.env.SERVICES.split('+');
 }
-var SERVICES = []
 for (var ix in SERVICES) {
     SERVICES[ix] = SERVICES[ix].split('/');
 }
@@ -451,7 +451,9 @@ app.get('/digest', function(req, res) {
     });
 });
 function translateService(display) {
+    console.log(display, 'in', SERVICES);
     for (var ix in SERVICES) {
+        console.log(ix, 'is', SERVICES[ix][1]);
         if (SERVICES[ix][1] == display) return SERVICES[ix][0];
     }
 }
@@ -536,8 +538,34 @@ setInterval(function() {
                 console.error(err);
                 return;
             }
+            console.log('data', data);
+            current._rev = data.rev;
+            var req = {
+                url: 'http://' + current.service + '/transfer',
+                method: 'POST',
+                timeout: 1000 * 60 * 60 * 2,
+                json: current
+            };
+            console.log('Sending transfer');
+            request(req, function(err, res, body) {
+                var doc = body;
+                if (err) {
+                    var stat = fmt(
+                        'Error at %s: %s',
+                        Date.now(), JSON.stringify(err)
+                    );
+                    doc = current;
+                    doc.updates.push(stat);
+                } else {
+                    doc.updates.push(fmt('Done at %s', Date.now()));
+                    doc.finished = true;
+                }
+                console.log('final', doc);
+                db().insert(doc, doc._id, function(err, data) {
+                    if (err) console.error(err);
+                });
+            });
         });
-        res.status(200).send(data.docs);
     });
 
 }, 1000 * 10);
@@ -546,7 +574,7 @@ app.post('/transfers', function(req, res) {
         if (err) return res.status(501).send(err);
         var transferDoc = {
             type: 'transfer',
-            service: req.body.service,
+            service: translateService(req.body.service),
             asset: req.body.asset,
             started: Date.now(),
             version: req.body.version,
@@ -554,11 +582,13 @@ app.post('/transfers', function(req, res) {
             source: translateGeo(req.body.source),
             active: true,
             started: false,
+            finished: false,
             updates: [],
             key: req.session.key,
             team: keydoc.team,
             creator: keydoc.creator
         }
+        console.log('New transfer request', transferDoc);
         var missingError = 'A required attribute was not set';
         if (!transferDoc.service || !transferDoc.asset ||
             !transferDoc.version || !transferDoc.target ||

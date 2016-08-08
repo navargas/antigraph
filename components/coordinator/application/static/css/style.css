@@ -7,6 +7,12 @@ body, html {
 h1 {
   font-weight: 100;
 }
+.greenBg {
+  background-color: rgba(0, 128, 0, 0.13);
+}
+.redBg {
+  background-color: rgba(128, 0, 0, 0.13);
+}
 .versionTable {
   margin-top: 10px;
 }
@@ -30,6 +36,9 @@ h1 {
   border-bottom: solid 1px #969696;
 }
 
+tbody > tr:hover {
+  cursor: pointer;
+}
 .hoverhl tbody > tr:hover {
   background-color: rgba(0, 126, 255, 0.1);
   cursor: pointer;

@@ -58,13 +58,17 @@
     </tr>
   </thead>
   <tbody>
-    <tr v-for="t in transfers">
+    <tr v-for="t in transfers"
+        v-bind:class="{ 'greenBg': t.finished, 'redBg': t.failed}">
       <td>{{ t.service }}</td>
       <td>{{ t.asset }} ({{ t.version }})</td>
       <td>{{ t.source }}</td>
       <td>{{ t.target }}</td>
       <td>{{ t.creator }}</td>
-      <td><a href="/transfers/{{ t._id }}">info</a></td>
+      <td>
+        <a href="/transfers/{{ t._id }}">info</a>
+        <a href="javascript:alert('Not yet supported');" v-if="t.finished">hide</a>
+      </td>
     </tr>
   </tbody>
 </table>
@@ -129,18 +133,21 @@ var VMain = new Vue({
       console.log('transfers', this.transfers);
     });
     members.get().then((response) => {this.members = response.json()});
-    assets.get().then((response) => {this.assets = response.json()});
+    assets.get().then((response) => {
+      this.assets = response.json();
+      var uriParts = location.hash.slice(1).split(':');
+      if (uriParts.length == 2) {
+        this.activeGroup = uriParts[0];
+        this.activeAsset = uriParts[1];
+        console.log('set to', this.activeGroup, this.activeAsset);
+      }
+    });
     /* Update info every UPDATE seconds */
     /*setInterval(function() {
       assets.get().then((response) => {
         Vue.set(this.assets, 'items', response.json());
       });
     }, UPDATE);*/
-    var uriParts = location.hash.slice(1).split(':');
-    if (uriParts.length == 2) {
-      this.activeGroup = uriParts[0];
-      this.activeAsset = parseInt(uriParts[1]);
-    }
   },
   methods: {
     toggleEmailField: function() {

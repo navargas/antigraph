@@ -2,6 +2,7 @@ coordinator:
     build: ./components/coordinator
     environment:
         - SERVICES=${SERVICES}
+        - THISNODE=${THISNODE}
         - GEO=${GEO}
         - DOMAIN=${DOMAIN}
         - DEBUG=${DEBUG}

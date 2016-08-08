@@ -1,4 +1,5 @@
 var express = require('express');
+var exec = require('child_process').exec;
 var bodyParser = require('body-parser');
 var fs = require('fs');
 var path = require('path');
@@ -52,6 +53,62 @@ function getTagInfo(images, callback) {
         })})(img);
     }
 }
+
+function spawn(cmd, callback) {
+    exec(cmd, (error, stdout, stderr) => {
+        if (error) {
+            console.error(error);
+        }
+        if (!error) error = {code:0};
+        callback({stderr: stderr, stdout: stdout, sc: error.code, cmd: cmd});
+    });
+}
+
+function waterfall_exec(statements, callback) {
+    var next = 0;
+    var report = [];
+    function caller(result) {
+        if (result) {
+            report.push(result);
+            if (result.sc != 0) return callback(report, true);
+        }
+
+        next++;
+
+        if (next == statements.length) {
+            callback(report);
+        } else {
+            spawn(statements[next], caller);
+        }
+    }
+    spawn(statements[next], caller);
+}
+
+app.post('/transfer', function(req, res) {
+    var doc = req.body;
+    var key = doc.key;
+    var asset = doc.asset;
+    var version = doc.version;
+    var target = doc.target;
+    var source = doc.source;
+    var fqnOld = fmt('%s/%s:%s', source, asset, version);
+    var fqnNew = fmt('%s/%s:%s', source, asset, version);
+    var steps = [
+        fmt('docker login -u token -p %s -e none', key, source),
+        fmt('docker pull %s', fqnOld),
+        fmt('docker tag %s %s', fqnOld, fqnNew),
+        fmt('docker push %s', fqnNew),
+        fmt('docker rm %s %s', fqnNew, fqnOld)
+    ];
+    console.log('Step List', steps);
+    waterfall_exec(steps, function(report, failed) {
+        console.log(report);
+        doc.updates = doc.updates.concat(report);
+        doc.failed = true;
+        console.log('final',doc);
+        res.status(200).send(doc);
+    });
+});
 
 app.get('/list/:teamname?', function(req, res) {
     var all = (req.params.teamname === undefined);
