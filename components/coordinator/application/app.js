@@ -6,6 +6,7 @@ var fs = require('fs');
 var path = require('path');
 var fmt = require('util').format;
 var request = require('request');
+//require('dotenv').config();
 var auth = require('./lib/auth');
 var db = require('./lib/db');
 var app = express();
@@ -32,8 +33,15 @@ process.on('uncaughtException', function (error) {
 
 function typeQuery(type, val) {
     var query = {
-        q: fmt('type:"%s" AND value:"%s"', type, val),
-        include_docs: true
+      "selector": {
+        "_id": {"$gt": 0},
+        "type": {
+          "$eq":type
+        },
+        "value": {
+          "$eq":val
+        }
+      }
     };
     return query;
 }
@@ -47,24 +55,26 @@ function getKeyDoc(key, callback) {
         console.log('Cache hit', key, 'expires', keyCache[key].expire);
         return callback(null, keyCache[key].doc);
     }
-    db().search('design', 'typeValue', query, function(err, value) {
+    console.log(query);
+    db().find(query, function(err, value) {
+        console.log('value', value);
         if (err) return callback(err);
         // if there are no rows return does_not_exist
-        if (value.total_rows === 0)
+        if (value.docs.length === 0)
             return callback({error:'key_does_not_exist'});
-        keyCache[key] = {expire: Date.now() + tenMin, doc: value.rows[0].doc};
-        callback(null, value.rows[0].doc);
+        keyCache[key] = {expire: Date.now() + tenMin, doc: value.docs[0]};
+        callback(null, value.docs[0]);
     });
 }
 
 function getMembers(team, callback) {
     var query = typeQuery('membership', team);
-    db().search('design', 'typeValue', query, function(err, value) {
+    db().find(query, function(err, value) {
         if (err) return callback(err);
         // if there are no rows return does_not_exist
-        if (value.total_rows === 0)
+        if (value.docs.length === 0)
             return callback({error:'key_does_not_exist'});
-        var result = value.rows.map((obj) => {return obj.doc.member});
+        var result = value.docs.map((obj) => {return obj.member});
         callback(null, result);
     });
 }
@@ -79,6 +89,29 @@ function getAssets(service, team, callback) {
             return callback(error);
         }
         callback(undefined, data);
+    });
+}
+
+function getRemoteAssets(target, key, callback) {
+    var domain = target[0];
+    var name = target[1];
+    var ssl = target[2];
+    var url = 'http' + (ssl ? 's':'') + '://'+ domain + '/digest';
+    var req = {
+        url: url,
+        timeout: 2000,
+        headers: {key: key, nofmt:'yes'}
+    }
+    request(req, function(err, res, body) {
+        console.log(target, body);
+        if (err) return callback(err);
+        var obj = undefined;
+        try {
+            obj = JSON.parse(body)
+        } catch(e) {
+            return callback(e);
+        }
+        callback(null, obj);
     });
 }
 
@@ -168,10 +201,63 @@ function createTeam(name, creator, callback) {
         });
     });
 }
+function formDigestData(all, serviceLegend) {
+    var legend = Object.keys(all);
+    var offline = [];
+    var allServices = {};
+    for (var serviceIndex in serviceLegend) {
+        var serviceIndex = serviceLegend[serviceIndex];
+        var join = {};
+        for (var key in all) {
+            console.log(key, serviceIndex);
+            var obj = all[key][serviceIndex];
+            if (!obj) {
+                offline.push([key, serviceIndex]);
+                continue;
+            }
+            var geo = key;
+            for (var assetKey in obj.assets) {
+                var asset = obj.assets[assetKey];
+                if (!join[asset.name]) join[asset.name] = {};
+                for (var versionKey in asset.versions) {
+                    var version = asset.versions[versionKey];
+                    if (!join[asset.name][version]) {
+                        var spec = Array(legend.length);
+                        legend.map((key)=>{spec[legend.indexOf(key)]=false});
+                        join[asset.name][version] = spec;
+                    }
+                    join[asset.name][version][legend.indexOf(geo)] = true;
+                }
+            }
+        }
+        allServices[serviceIndex] = join;
+    }
+    return {assets:allServices, legend:legend, offline:offline};;
+}
 
 var services = [];
-if (process.env.SERVICES)
+if (process.env.SERVICES) {
     services = process.env.SERVICES.split('+');
+    SERVICES = process.env.SERVICES.split('+');
+}
+var SERVICES = []
+for (var ix in SERVICES) {
+    SERVICES[ix] = SERVICES[ix].split('/');
+}
+
+var geo = [];
+if (process.env.GEO)
+    geo = process.env.GEO.split('+');
+for (var ix in geo) {
+    geo[ix] = geo[ix].split('/');
+}
+
+// If debug is enabled replace all targets w/ localhost
+if (process.env.DEBUG == 'yes') geo.map((o) => {
+    o[0] = 'localhost';
+    o[2] = undefined;
+});
+console.log('Using cluster', geo);
 
 app.post('/login', function(req, res) {
     var email = req.body.email;
@@ -199,7 +285,7 @@ app.post('/uploadkey', function(req, res) {
         return fail(res, 'Key required');
     }
     getKeyDoc(key, function(err, doc) {
-        if (err) return fail(res, 'Unable to find key'); 
+        if (err) return fail(res, 'Unable to find key');
         req.session.email = doc.creator;
         req.session.key = key;
         res.cookie('apikey', key, { maxAge: 900000 });
@@ -207,7 +293,7 @@ app.post('/uploadkey', function(req, res) {
     });
 });
 app.all('/createkey/:team', function(req, res) {
-    var team = req.params.team; 
+    var team = req.params.team;
     var email = req.session.email;
     var luc = fmt(
         'type:"membership" AND value:"%s" AND member:"%s"',
@@ -328,17 +414,30 @@ app.get('/teams', function(req, res) {
     });
 });
 app.get('/manifest', function(req, res) {
-    getKeyDoc(req.session.key, function(err, keydoc) {
-        if (err) return res.status(501).send(err);
-        getAllAssets(services, keydoc.team, function(data) {
-            res.send(data);
-        });
-    });
+    var results = {};
+    for (var ix in geo) {
+        ((target)=> {getRemoteAssets(geo[ix], req.session.key, function(err, data) {
+            if (err)
+                results[target[1]] = {};
+            else
+                results[target[1]] = data;
+            console.log('send attempt', Object.keys(results).length, geo.length);
+            if (Object.keys(results).length == geo.length) {
+                var serviceLegend = services.map((o)=>{return o.split('/')[1];});
+                console.log(results, serviceLegend);
+                var displayForm = formDigestData(results, serviceLegend);
+                res.send(displayForm);
+            }
+        })})(geo[ix]);
+    }
 });
 app.get('/digest', function(req, res) {
-    getKeyDoc(req.session.key, function(err, keydoc) {
+    var key = req.session.key || req.headers.key;
+    var nofmt = req.headers.nofmt;
+    getKeyDoc(key, function(err, keydoc) {
         if (err) return res.status(501).send(err);
         getAllAssets(services, keydoc.team, function(data) {
+            if (nofmt) return res.send(data);
             var services = Object.keys(data);
             var result = [];
             // Sort services alphabetically so interface is consistent
@@ -348,6 +447,132 @@ app.get('/digest', function(req, res) {
                 result.push(data[services[index]]);
             }
             res.send(result);
+        });
+    });
+});
+function translateService(display) {
+    for (var ix in SERVICES) {
+        if (SERVICES[ix][1] == display) return SERVICES[ix][0];
+    }
+}
+function translateGeo(display) {
+    for (var ix in geo) {
+        if (geo[ix][1] == display) return geo[ix][0];
+    }
+}
+app.get('/transfers/:id', function(req, res) {
+    getKeyDoc(req.session.key, function(err, keydoc) {
+        if (err) return res.status(501).send(err);
+        var query = {
+          "selector": {
+            "_id": {"$eq": req.params.id},
+            "type": {
+              "$eq":'transfer'
+            },
+            "team": {
+              "$eq":keydoc.team
+            }
+          }
+        };
+        db().find(query, function(err, data) {
+            if (err) return res.status(501).send(err);
+            // remove API key
+            data.docs.map((o) => {o.key = undefined});
+            res.status(200).send(data.docs);
+        });
+    });
+});
+app.get('/transfers', function(req, res) {
+    getKeyDoc(req.session.key, function(err, keydoc) {
+        if (err) return res.status(501).send(err);
+        var query = {
+          "selector": {
+            "_id": {"$gt": 0},
+            "type": {
+              "$eq":'transfer'
+            },
+            "active": {
+              "$eq":true
+            },
+            "team": {
+              "$eq":keydoc.team
+            }
+          }
+        };
+        db().find(query, function(err, data) {
+            if (err) return res.status(501).send(err);
+            // remove API key
+            data.docs.map((o) => {o.key = undefined});
+            res.status(200).send(data.docs);
+        });
+    });
+});
+// Every 10 seconds check for transfers
+setInterval(function() {
+    var query = {
+      "selector": {
+        "_id": {"$gt": 0},
+        "type": {
+          "$eq":'transfer'
+        },
+        "source": {
+          "$eq":process.env.THISNODE
+        },
+        "started": {
+          "$eq":false
+        }
+      }
+    };
+    db().find(query, function(err, data) {
+        if (err) return console.error(err);
+        var current = data.docs[0];
+        if (!current) return;
+        console.log('Starting transfer', current);
+        current.started = true;
+        var stat = fmt('Started at %s by %s', Date.now(), process.env.THISNODE);
+        current.updates.push(stat);
+        db().insert(current, current._id, function(err, data) {
+            if (err) {
+                console.error(err);
+                return;
+            }
+        });
+        res.status(200).send(data.docs);
+    });
+
+}, 1000 * 10);
+app.post('/transfers', function(req, res) {
+    getKeyDoc(req.session.key, function(err, keydoc) {
+        if (err) return res.status(501).send(err);
+        var transferDoc = {
+            type: 'transfer',
+            service: req.body.service,
+            asset: req.body.asset,
+            started: Date.now(),
+            version: req.body.version,
+            target: translateGeo(req.body.target),
+            source: translateGeo(req.body.source),
+            active: true,
+            started: false,
+            updates: [],
+            key: req.session.key,
+            team: keydoc.team,
+            creator: keydoc.creator
+        }
+        var missingError = 'A required attribute was not set';
+        if (!transferDoc.service || !transferDoc.asset ||
+            !transferDoc.version || !transferDoc.target ||
+            !transferDoc.creator || !transferDoc.source)
+                return res.status(501).send({error:missingError});
+        db().insert(transferDoc, function(err, value){
+            if (err) {
+                console.error(err);
+                return res.status(501).send(err);
+            }
+            console.log('New Transfer', transferDoc);
+            // remove key and echo doc
+            transferDoc.key = undefined;
+            res.status(200).send(transferDoc);
         });
     });
 });

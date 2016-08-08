@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 
+<title>Cumulus Repo</title>
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
 <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,200,300'
   rel='stylesheet' type='text/css'>
@@ -11,20 +12,31 @@
 <hr>
 <p v-if="errorMsg" v-cloak class="errormessage">{{errorMsg}}</p>
 <h1>Assets</h1>
-<p v-if="assets.length == 0">None Found</p>
-<div v-for="assetGroup in assets">
-  <h3>{{assetGroup.service}}</h3>
+<p v-if="!assets">None Found</p>
+<p v-if="assets == 'init'">Loading...</p>
+<div v-else v-for="assetGroup in assets.assets">
+  <h3>{{ $key }}</h3>
   <table class="table table-bordered">
     <tbody>
-      <tr v-for="asset in assetGroup.assets"
-          v-on:click="showVersions(assetGroup.service, $index)">
+      <tr v-for="asset in assetGroup"
+          v-on:click="showVersions($parent.$key, $key)">
         <td>
-          {{asset.name}}
-          <table class="table table-bordered"
-              v-if="activeGroup == assetGroup.service && activeAsset == $index">
-            <tbody>
-              <tr v-for="version in asset.versions" class="nohl">
-                <td>{{version}}</td>
+          {{ $key }}
+          <table class="table table-bordered versionTable"
+              v-if="activeGroup == $parent.$key && activeAsset == $key">
+            <thead>
+              <tr>
+                <th>Version</th>
+                <th v-for="version in assets.legend">{{ version }}</th>
+              </tr>
+            </thead>
+            <tbody v-on:click.stop.prevent="">
+              <tr v-for="versionList in asset" class="nohl">
+                <td>{{ $key }}</td>
+                <td v-for="version in versionList">
+                  <span v-if="version" class="glyphicon glyphicon-ok"></span>
+                  <a v-else v-on:click="transfer($parent.$key, $index)">transfer</a>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -33,6 +45,43 @@
     </tbody>
   </table>
 </div>
+<h1>Active Transfers</h1>
+<table v-if="transfers && transfers.length>0" class="table table-bordered ">
+  <thead>
+    <tr>
+      <th>Service</th>
+      <th>Asset</th>
+      <th>Source</th>
+      <th>Destination</th>
+      <th>Started By</th>
+      <th>More</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr v-for="t in transfers">
+      <td>{{ t.service }}</td>
+      <td>{{ t.asset }} ({{ t.version }})</td>
+      <td>{{ t.source }}</td>
+      <td>{{ t.target }}</td>
+      <td>{{ t.creator }}</td>
+      <td><a href="/transfers/{{ t._id }}">info</a></td>
+    </tr>
+  </tbody>
+</table>
+<p v-else>None</p>
+<h1>Currently Offline</h1>
+<table v-if="assets.offline && assets.offline.length > 0" class="table">
+  <thead>
+    <tr><th>Geography</th><th>Service</th></tr>
+  </thead>
+  <tbody>
+    <tr v-for="geo in assets.offline">
+      <td>{{ geo[0] }}</td>
+      <td>{{ geo[1] }}</td>
+    </tr>
+  </tbody>
+</table>
+<p v-else>None</p>
 <h1>Team Members</h1>
 <p v-if="members.length == 0">None Found</p>
 <table class="table table-bordered">
@@ -67,13 +116,18 @@ var VMain = new Vue({
   el: '#content',
   ready: function() {
     var members = this.$resource('/members');
-    var assets = this.$resource('/digest');
+    var transfers = this.$resource('/transfers');
+    var assets = this.$resource('/manifest');
     if (getCookie('signal_key')) {
       var key = getCookie('apikey');
       var t = prompt('Copy this key and save it', key);
       eraseCookie('signal_key');
     };
     this.errorMsg = getParameterByName('error');
+    transfers.get().then((response) => {
+      this.transfers = response.json();
+      console.log('transfers', this.transfers);
+    });
     members.get().then((response) => {this.members = response.json()});
     assets.get().then((response) => {this.assets = response.json()});
     /* Update info every UPDATE seconds */
@@ -82,6 +136,11 @@ var VMain = new Vue({
         Vue.set(this.assets, 'items', response.json());
       });
     }, UPDATE);*/
+    var uriParts = location.hash.slice(1).split(':');
+    if (uriParts.length == 2) {
+      this.activeGroup = uriParts[0];
+      this.activeAsset = parseInt(uriParts[1]);
+    }
   },
   methods: {
     toggleEmailField: function() {
@@ -91,10 +150,41 @@ var VMain = new Vue({
       if (group === this.activeGroup && asset === this.activeAsset) {
         this.activeAsset = null;
         this.activeGroup = null;
+        location.hash = '';
         return;
       }
       this.activeAsset = asset;
       this.activeGroup = group;
+      location.hash = this.activeGroup + ':' + this.activeAsset;
+    },
+    transfer: function(version, destination) {
+      console.log(this.activeGroup, this.activeAsset, version, destination);
+      var versions = this.assets.assets[this.activeGroup][this.activeAsset][version];
+      if (versions[destination]) {
+        window.location.reload();
+        return;
+      }
+      var source;
+      for (var ix in versions) {
+        if (versions[ix]) {
+          source = ix;
+          break;
+        }
+      }
+      if (!source) {
+        alert('This asset is not found in any mirrors. Cannot transfer.');
+        return;
+      }
+      var obj = {
+        source: this.assets.legend[source],
+        service: this.activeGroup,
+        asset: this.activeAsset,
+        version: version,
+        target: this.assets.legend[destination]
+      }
+      this.$resource('/transfers').save(obj).then(()=>{
+        window.location.reload();
+      });
     },
     deleteteam: function() {
       var t = confirm('Are you sure you wish to delete this team?');
@@ -105,10 +195,12 @@ var VMain = new Vue({
   },
   data: {
     errorMsg: false,
+    transfers: null,
     activeGroup: null,
     activeAsset: null,
     members: [],
-    assets: [],
+    assets: 'init',
+    //assetsN: {"assets":{"Binary Repo":{"testfile":{"1.0.0":[true,false,true,true]}},"Docker Registry":{"sre_demo/nginx":{"v4":[true,true,false,false],"v5":[true,true,true,true]}}},"legend":["Western Europe","IBM SVL Intranet","North America","CDS Dev"]},
     showEmailForm: false,
     activeAsset: null
   }
