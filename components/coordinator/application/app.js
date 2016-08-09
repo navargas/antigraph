@@ -466,6 +466,32 @@ function translateGeo(display) {
         if (geo[ix][1] == display) return geo[ix][0];
     }
 }
+app.delete('/transfers/:id', function(req, res) {
+    getKeyDoc(req.session.key, function(err, keydoc) {
+        if (err) return res.status(501).send(err);
+        var query = {
+          "selector": {
+            "_id": {"$eq": req.params.id},
+            "type": {
+              "$eq":'transfer'
+            },
+            "team": {
+              "$eq":keydoc.team
+            }
+          }
+        };
+        db().find(query, function(err, data) {
+            if (err) return res.status(501).send(err);
+            var doc = data.docs[0];
+            if (!doc) return res.status(404).send({error:'Asset not found'});
+            doc.active = false;
+            db().insert(doc, doc._id, function(err, data) {
+                if (err) return res.status(501).send(err);
+                res.status(200).send({status: 'done'});
+            });
+        });
+    });
+});
 app.get('/transfers/:id', function(req, res) {
     getKeyDoc(req.session.key, function(err, keydoc) {
         if (err) return res.status(501).send(err);
@@ -532,7 +558,6 @@ setInterval(function() {
     db().find(query, function(err, data) {
         if (err) return console.error(err);
         var current = data.docs[0];
-        console.log('Transaction',current);
         if (!current) return;
         console.log('Starting transfer', current);
         current.started = true;

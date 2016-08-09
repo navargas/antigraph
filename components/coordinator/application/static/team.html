@@ -70,7 +70,7 @@
       <td>{{ t.creator }}</td>
       <td>
         <a href="/transfers/{{ t._id }}">info</a>
-        <a href="javascript:alert('Not yet supported');" v-if="t.finished">hide</a>
+        <a v-on:click="hideTransfer(t._id)" v-if="t.finished">hide</a>
       </td>
     </tr>
   </tbody>
@@ -173,6 +173,11 @@ var VMain = new Vue({
       this.activeAsset = asset;
       this.activeGroup = group;
       location.hash = this.activeGroup + ':' + this.activeAsset;
+    },
+    hideTransfer: function(transferId) {
+      this.$resource('/transfers/'+transferId).delete().then(()=>{
+        window.location.reload();
+      });
     },
     transfer: function(version, destination) {
       console.log(this.activeGroup, this.activeAsset, version, destination);
