@@ -1,5 +1,6 @@
 var express = require('express');
 var fs = require('fs');
+var exec = require('child_process').exec;
 var path = require('path');
 var mkdirp = require('mkdirp');
 var querystring = require('querystring');
@@ -199,7 +200,7 @@ function getImagesByTeam(team, callback) {
 }
 
 function listImages(req, res) {
-    var team = req.params.teamname; 
+    var team = req.params.teamname;
     var error;
     getImagesByTeam(team, function (err, images) {
         if (err) {
@@ -209,6 +210,63 @@ function listImages(req, res) {
         res.send({error:error, assets:images});
     });
 }
+
+function spawn(cmd, callback) {
+    exec(cmd, (error, stdout, stderr) => {
+        if (error) {
+            console.error(error);
+        }
+        if (!error) error = {code:0};
+        callback({stderr: stderr, stdout: stdout, sc: error.code, cmd: cmd});
+    });
+}
+
+function waterfall_exec(statements, callback) {
+    var next = 0;
+    var report = [];
+    function caller(result) {
+        if (result) {
+            report.push(result);
+            if (result.sc != 0) return callback(report, true);
+        }
+
+        next++;
+
+        if (next == statements.length) {
+            callback(report);
+        } else {
+            spawn(statements[next], caller);
+        }
+    }
+    spawn(statements[next], caller);
+}
+
+app.post('/transfer', function(req, res) {
+    var doc = req.body;
+    var key = doc.key;
+    var team = doc.team;
+    var asset = doc.asset;
+    var version = doc.version;
+    var target = doc.target;
+    var source = doc.source;
+    var header = fmt('-H "X-API-KEY: %s"', key);
+    var path = fmt('/var/asset-data/%s/%s/%s', team, asset, version);
+    var files = fs.readdirSync(path);
+    var filename = files.filter((o) => { return (o.indexOf('.') != 0) } )[0];
+    console.log('Found files', files, filename);
+    var dest = fmt('https://%s/assets/%s/%s/', target, asset, version);
+    var steps = [
+        fmt('curl %s -F "upload=@%s/%s" %s', header, path, filename, dest)
+    ];
+    console.log('Step List', steps);
+    waterfall_exec(steps, function(report, failed) {
+        console.log(report);
+        doc.updates = doc.updates.concat(report);
+        doc.failed = (report[report.length-1].sc !== 0);
+        console.log('final',doc);
+        res.status(200).send(doc);
+    });
+});
 
 
 /* for debug */

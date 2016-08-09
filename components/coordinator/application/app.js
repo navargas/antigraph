@@ -548,13 +548,17 @@ setInterval(function() {
             };
             console.log('Sending transfer');
             request(req, function(err, res, body) {
-                var doc = body;
+                var doc;
+                if (typeof(body) == 'object') {
+                    doc = body;
+                } else {
+                    doc = current;
+                }
                 if (err) {
                     var stat = fmt(
                         'Error at %s: %s',
                         Date.now(), JSON.stringify(err)
                     );
-                    doc = current;
                     doc.updates.push(stat);
                 } else {
                     doc.updates.push(fmt('Done at %s', Date.now()));
