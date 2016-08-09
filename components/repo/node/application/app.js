@@ -189,7 +189,7 @@ function getImagesByTeam(team, callback) {
     var result = [];
     fs.readdir(targetPath, function(err, dir) {
         // team does not exist
-        if (err.errno == -2) return callback(null, []);
+        if (err && err.errno == -2) return callback(null, []);
         // other error
         if (err) return callback(err);
         for (var index in dir) {
