@@ -96,6 +96,10 @@ function getRemoteAssets(target, key, callback) {
     var domain = target[0];
     var name = target[1];
     var ssl = target[2];
+    if (domain === process.env.THISNODE) {
+        domain = 'localhost';
+        ssl = false;
+    }
     var url = 'http' + (ssl ? 's':'') + '://'+ domain + '/digest';
     var req = {
         url: url,
