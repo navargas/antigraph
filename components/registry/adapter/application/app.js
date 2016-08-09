@@ -97,6 +97,7 @@ app.post('/transfer', function(req, res) {
         fmt('docker login -u token -p %s -e none', key, source),
         fmt('docker pull %s', fqnOld),
         fmt('docker tag %s %s', fqnOld, fqnNew),
+        fmt('docker login -u token -p %s -e none', key, target),
         fmt('docker push %s', fqnNew),
         fmt('docker rm %s %s', fqnNew, fqnOld)
     ];
