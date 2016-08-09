@@ -14,6 +14,11 @@ You can upload files and docker images to any of the URLs listed below, but keep
 | East Asia      |     ea.cumulusrepo.com | Located in Singapore (sng01)                      |
 | North America  |     na.cumulusrepo.com | Located in Dallas (dal09)                         |
 
+**Note**: `svl.cumulusrepo.com` is only accessable from IBM Intranet.
+`we`, `na`, and `ea` can be accessed globally.
+
+`cdsdev` is accessible only from IBM IP addresses.
+
 ## Create Key
 First visit https://svl.cumulusrepo.com and enter in a Intranet ID/Password.
 Then you can select or create a team and an API key will be created.
