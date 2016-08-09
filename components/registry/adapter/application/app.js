@@ -99,7 +99,7 @@ app.post('/transfer', function(req, res) {
         fmt('docker tag %s %s', fqnOld, fqnNew),
         fmt('docker login -u token -p %s -e none', key, target),
         fmt('docker push %s', fqnNew),
-        fmt('docker rm %s %s', fqnNew, fqnOld)
+        fmt('docker rmi %s %s', fqnNew, fqnOld)
     ];
     console.log('Step List', steps);
     waterfall_exec(steps, function(report, failed) {
