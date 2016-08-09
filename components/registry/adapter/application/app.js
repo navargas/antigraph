@@ -92,7 +92,7 @@ app.post('/transfer', function(req, res) {
     var target = doc.target;
     var source = doc.source;
     var fqnOld = fmt('%s/%s:%s', source, asset, version);
-    var fqnNew = fmt('%s/%s:%s', source, asset, version);
+    var fqnNew = fmt('%s/%s:%s', target, asset, version);
     var steps = [
         fmt('docker login -u token -p %s -e none', key, source),
         fmt('docker pull %s', fqnOld),

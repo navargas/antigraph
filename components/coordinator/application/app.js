@@ -528,6 +528,7 @@ setInterval(function() {
     db().find(query, function(err, data) {
         if (err) return console.error(err);
         var current = data.docs[0];
+        console.log('Transaction',current);
         if (!current) return;
         console.log('Starting transfer', current);
         current.started = true;
@@ -560,6 +561,7 @@ setInterval(function() {
                         Date.now(), JSON.stringify(err)
                     );
                     doc.updates.push(stat);
+                    doc.failed = true;
                 } else {
                     doc.updates.push(fmt('Done at %s', Date.now()));
                     doc.finished = true;
