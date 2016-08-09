@@ -7,6 +7,9 @@ body, html {
 h1 {
   font-weight: 100;
 }
+.redtext {
+  color: red;
+}
 .greenBg {
   background-color: rgba(0, 128, 0, 0.13);
 }

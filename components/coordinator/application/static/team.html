@@ -34,8 +34,11 @@
               <tr v-for="versionList in asset" class="nohl">
                 <td>{{ $key }}</td>
                 <td v-for="version in versionList">
-                  <span v-if="version" class="glyphicon glyphicon-ok"></span>
-                  <a v-else v-on:click="transfer($parent.$key, $index)">transfer</a>
+                  <p v-if="offline($index)" class="redtext">check connection</p>
+                  <div v-else>
+                    <span v-if="version" class="glyphicon glyphicon-ok"></span>
+                    <a v-else v-on:click="transfer($parent.$key, $index)">transfer</a>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -150,6 +153,13 @@ var VMain = new Vue({
     }, UPDATE);*/
   },
   methods: {
+    offline: function(index) {
+      for (var ix in this.assets.offline) {
+        if (this.assets.offline[ix][0] == this.assets.legend[index] &&
+            this.assets.offline[ix][1] == this.activeGroup) return true;
+      }
+      return false;
+    },
     toggleEmailField: function() {
       this.showEmailForm = !this.showEmailForm;
     },
