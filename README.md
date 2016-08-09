@@ -19,6 +19,9 @@ First visit https://svl.cumulusrepo.com and enter in a Intranet ID/Password.
 Then you can select or create a team and an API key will be created.
 
 ## Docker
+
+*If you get an SSL error, you may need to run `update-ca-certificates`* 
+
 ```bash
 docker login svl.cumulusrepo.com
 # Username should be "token" and password will be the API key you generate
