@@ -1,7 +1,4 @@
-FROM centos:centos7
-
-RUN bash -c 'curl --silent --location https://rpm.nodesource.com/setup_4.x | bash -'
-RUN yum install nodejs npm docker -y
+FROM navargas/docker
 
 RUN npm install forever -g
 
