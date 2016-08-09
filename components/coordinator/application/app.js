@@ -211,6 +211,10 @@ function formDigestData(all, serviceLegend) {
         for (var key in all) {
             console.log(key, serviceIndex);
             var obj = all[key][serviceIndex];
+            if (!obj) {
+                offline.push([key, serviceIndex]);
+                continue;
+            }
             var geo = key;
             for (var assetKey in obj.assets) {
                 var asset = obj.assets[assetKey];
