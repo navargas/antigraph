@@ -1,4 +1,5 @@
 var express = require('express');
+var md5 = require('md5-file');
 var fs = require('fs');
 var exec = require('child_process').exec;
 var path = require('path');
@@ -17,6 +18,17 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
 
 var PORT = process.env.PORT || 80;
+
+function filterSystemFiles(array) {
+    var files = ['__md5', '__activeUpload'];
+    return array.filter((o) => {
+        console.log(o, files.indexOf(o));
+        if (files.indexOf(o) >= 0)
+            {return false;}
+        else
+            {return true;}
+    });
+}
 
 /* httpPost used for communicating with authenticator */
 function httpPost(hostname, path, port, params, callback) {
@@ -76,14 +88,17 @@ function uploadFileTarget(req, res) {
         mkdirp.sync(targetPath, 0777);
         return targetPath;
     }
-    // store the asset in /var/assets/teamname/assetname/version/filename.ext
+    var originalPath;
+    var originalFilename = 'filename_dne_error';
+    // store the asset in /var/assets/teamname/assetname/version/__activeUpload
     var storage = multer.diskStorage({
         destination: function (req, file, callback) {
-            callback(null, getPath(file));
+            originalPath = getPath(file);
+            callback(null, originalPath);
         },
         filename: function (req, file, callback) {
-            var filename = file.originalname || 'filename_dne';
-            return callback(null, filename);
+            originalFilename = file.originalname || 'filename_dne';
+            return callback(null, '__activeUpload');
         }
     });
     var params = {key: key};
@@ -111,7 +126,30 @@ function uploadFileTarget(req, res) {
                 var errorMsg = {error:'There was an issue uploading the file'};
                 return res.status(500).send(errorMsg);
             }
-            return res.send({status: 'ok'});
+            var tmpPath = path.join(originalPath, '__activeUpload');
+            var newPath = path.join(originalPath, originalFilename);
+            var md5Path = path.join(originalPath, '__md5');
+            fs.rename(tmpPath, newPath, function(err, data) {
+                if (err) console.error(err);
+                else md5(newPath, (md5err, md5sum)=>{
+                    if (md5err) {
+                        console.error(md5err);
+                        md5sum = 'Error! Could not compute sum';
+                    }
+                    fs.writeFile(md5Path, md5sum, function(ferr) {
+                        if(ferr) {
+                            return console.log(ferr);
+                        }
+                        return res.send({
+                            error: err || undefined,
+                            filename: originalFilename,
+                            asset: asset,
+                            md5: md5sum,
+                            version: version
+                        });
+                    });
+                });
+            });
         });
     });
 }
@@ -138,6 +176,7 @@ function fileInfoHeaders(req, res) {
             info = undefined;
             console.error('Parse error on:', data);
         }
+        console.log('From team', info);
         if (!info || !info.team) return res.status(statusCode).send(data);
         group = info.team;
         var targetPath = path.join(
@@ -149,6 +188,7 @@ function fileInfoHeaders(req, res) {
         res.setHeader('X-AUTH-TEAM', group);
         res.setHeader('X-AUTH-ASSET', asset);
         res.setHeader('X-AUTH-VERSION', version);
+        console.log('Translated to', targetPath);
         fs.readdir(targetPath, function(err, files) {
             if (err && err.code == 'ENOENT') return res.status(404).send({
                 asset:asset,
@@ -156,7 +196,11 @@ function fileInfoHeaders(req, res) {
                 error: 'Asset/version not found on this server!'
             });
             if (err) return res.status(501).send(err);
-            if (files.length == 0) return res.status(404);
+            console.log('Checking', files, 'in', targetPath);
+            // Do not index files that start with a "."
+            var files = filterSystemFiles(files);
+            console.log('Available files', files);
+            if (files.length == 0) return res.status(404).end();
             var fileInFiles = (files.indexOf(fileRequestHeader) >= 0);
             if (files.length > 1 && !fileInFiles) return res.status(501).send({
                 error: 'Multiple files found. Please specify a file in ' +
@@ -255,7 +299,7 @@ app.post('/transfer', function(req, res) {
     var header = fmt('-H "X-API-KEY: %s"', key);
     var path = fmt('/var/asset-data/%s/%s/%s', team, asset, version);
     var files = fs.readdirSync(path);
-    var filename = files.filter((o) => { return (o.indexOf('.') != 0) } )[0];
+    var filename = filterSystemFiles(files)[0];
     console.log('Found files', files, filename);
     var dest = fmt('https://%s/assets/%s/%s/', target, asset, version);
     var steps = [

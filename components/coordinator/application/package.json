@@ -16,6 +16,7 @@
     "dotenv": "^2.0.0",
     "express": "^4.14.0",
     "express-session": "^1.14.0",
+    "md5-file": "^3.1.1",
     "passport": "^0.3.2",
     "passport-ldapauth": "^0.5.0",
     "request": "^2.74.0"
