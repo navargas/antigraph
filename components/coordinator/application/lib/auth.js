@@ -14,7 +14,8 @@ passport.use(new LdapStrategy(LDAP_OPTS));
 
 function isValidUser(email, password, callback) {
     var TOErr = '(LDAP Timeout) This process will only work on a mirror ' +
-                'in an IBM location. Retry on odin.svl.ibm.com';
+                'in an IBM location. Retry on https://svl.cumulusrepo.com, ' +
+                'or paste an API key under "Import Existing Key"';
     var invalidErr = 'Invalid username or password';
     var req = {body:{username:email, password:password}};
     var next = function() {};
