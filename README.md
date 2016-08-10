@@ -44,6 +44,8 @@ The old "assets" command line tool will also work for uploading files.
 
 # Development
 
+*Behind the scenes info. You can ignore this section if you are just using Cumulus Repo.*
+
 ### Requirements
 
 To start a local instance of Cumulus Repo V2 you will need:
