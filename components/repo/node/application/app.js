@@ -225,7 +225,14 @@ function fileInfoHeaders(req, res) {
 
 function getVersions(team, asset, callback) {
     var targetPath = path.join(conf.storageDir, team, asset);
-    fs.readdir(targetPath, callback);
+    fs.readdir(targetPath, (err, versions)=>{
+        var versions = versions.filter(version => {
+            var vPath = path.join(targetPath, version);
+            var files = filterSystemFiles(fs.readdirSync(vPath));
+            return (files.length > 0);
+        });
+        callback(err, versions);
+    });
 }
 
 function getImagesByTeam(team, callback) {
