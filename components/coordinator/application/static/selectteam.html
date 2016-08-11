@@ -39,7 +39,7 @@ var VMain = new Vue({
   ready: function() {
     var teams = this.$resource('/teams');
     this.errorMsg = getParameterByName('error');
-    teams.get().then((response) => {this.teams = response.json()});
+    teams.get().then(function(response) {this.teams = response.json()});
   },
   methods: {
     navigate: function(target) {

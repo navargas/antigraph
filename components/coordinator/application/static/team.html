@@ -131,12 +131,12 @@ var VMain = new Vue({
       eraseCookie('signal_key');
     };
     this.errorMsg = getParameterByName('error');
-    transfers.get().then((response) => {
+    transfers.get().then(function(response) {
       this.transfers = response.json();
       console.log('transfers', this.transfers);
     });
-    members.get().then((response) => {this.members = response.json()});
-    assets.get().then((response) => {
+    members.get().then(function(response) {this.members = response.json()});
+    assets.get().then(function(response) {
       this.assets = response.json();
       var uriParts = location.hash.slice(1).split(':');
       if (uriParts.length == 2) {
@@ -147,7 +147,7 @@ var VMain = new Vue({
     });
     /* Update info every UPDATE seconds */
     /*setInterval(function() {
-      assets.get().then((response) => {
+      assets.get().then(function(response) {
         Vue.set(this.assets, 'items', response.json());
       });
     }, UPDATE);*/
@@ -175,7 +175,7 @@ var VMain = new Vue({
       location.hash = this.activeGroup + ':' + this.activeAsset;
     },
     hideTransfer: function(transferId) {
-      this.$resource('/transfers/'+transferId).delete().then(()=>{
+      this.$resource('/transfers/'+transferId).delete().then(function() {
         window.location.reload();
       });
     },
@@ -204,14 +204,14 @@ var VMain = new Vue({
         version: version,
         target: this.assets.legend[destination]
       }
-      this.$resource('/transfers').save(obj).then(()=>{
+      this.$resource('/transfers').save(obj).then(function() {
         window.location.reload();
       });
     },
     deleteteam: function() {
       var t = confirm('Are you sure you wish to delete this team?');
       if (t) {
-        this.$resource('/team').delete().then(()=>{window.location='/signout'});
+        this.$resource('/team').delete().then(function(){window.location='/signout'});
       }
     }
   },
