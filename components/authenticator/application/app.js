@@ -175,7 +175,7 @@ function uriAuth(req, res) {
     var key = decode.split(':')[1];
     console.log(username, key, uri);
     // if the user is doing a non-action, like catalog or ping, allow
-    if (uri == '/v2/' || uri == '/v2/_catalog') {
+    if (uri == '/v2/_catalog' || uri == '/v2/_catalog') {
         return res.status(201).end();
     }
     // if the user is attempting to upload a team-less image, block
@@ -184,14 +184,10 @@ function uriAuth(req, res) {
         return rejectAccess(req, res);
     }
     // finnally if the uri is invalid, reject
-    if (!uriValid.test(uri)) {
+    if (!uriValid.test(uri) && uri !== '/v2/') {
         console.log('Invalid URI', uri);
         return rejectAccess(req, res);
     }
-    var match = uriValid.exec(uri);
-    var team = match[1];
-    var asset = match[2];
-    var service = 'docker';
     getKeyDoc(key, function(err, keydoc) {
         if (err) {
             console.error(err);
@@ -200,6 +196,13 @@ function uriAuth(req, res) {
         if (!keydoc.valid) {
             return rejectAccess(req, res);
         }
+        if (uri == '/v2/') {
+            return res.status(201).end();
+        }
+        var match = uriValid.exec(uri);
+        var team = match[1];
+        var asset = match[2];
+        var service = 'docker';
         if (keydoc.team != team) {
             console.error('Team mis-match', team, keydoc.team);
             return rejectAccess(req, res);
