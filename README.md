@@ -65,6 +65,8 @@ assets fetch assetName:versionName
 
 *Behind the scenes info. You can ignore this section if you are just using Cumulus Repo.*
 
+![Diagram](http://i.imgur.com/Cpf5XMB.png)
+
 ### Requirements
 
 To start a local instance of Cumulus Repo V2 you will need:
