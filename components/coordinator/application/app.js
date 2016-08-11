@@ -103,7 +103,7 @@ function getRemoteAssets(target, key, callback) {
     var url = 'http' + (ssl ? 's':'') + '://'+ domain + '/digest';
     var req = {
         url: url,
-        timeout: 2000,
+        timeout: 2500,
         headers: {key: key, nofmt:'yes'}
     }
     request(req, function(err, res, body) {
