@@ -2,16 +2,15 @@ registry:
     image: registry:2.5
     volumes:
         - /dockervolumes/registry/:/tmp/registry-dev/
-registry_nginx:
-    build: ./components/registry/nginx
-    ports:
-        - "9445:443"
+docker:
+    image: docker:1.12.0-dind
+    privileged: true
     links:
         - registry
-        - authenticator
 registry_adapter:
     build: ./components/registry/adapter
-    volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+        - DOCKER_HOST=tcp://docker:2375
     links:
         - registry
+        - docker

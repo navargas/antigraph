@@ -52,9 +52,6 @@ To start a local instance of Cumulus Repo V2 you will need:
 - docker (recent version)
 - docker-compose (recent version)
 
-Docker must be running locally (i.e. the default configuration with a /var/run/docker.sock file).
-Otherwise the coordinator component will not be able to run docker operations such as push and pull.
-
 ### Instructions
 
 - Create a .env file in the root directory with the following contents
