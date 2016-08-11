@@ -4,6 +4,9 @@ body, html {
   max-width: 800px;
   margin: auto;
 }
+#content {
+  margin-bottom: 20px;
+}
 h1 {
   font-weight: 100;
 }
