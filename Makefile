@@ -13,6 +13,7 @@ running :
 	@docker ps --format '{{.Names}}' | wc -l | tr -d ' '
 
 run : build
+	-docker rm $(shell basename $$(pwd))_docker_1
 	docker-compose up -d
 	-@rm -f .failed.debug
 	$(eval R = $(shell cat docker-compose.yml \
