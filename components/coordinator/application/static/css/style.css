@@ -1,7 +1,7 @@
 [v-cloak] { display: none }
 body, html {
   font-family: "Roboto", Helvetica, Arial, sans-serif;
-  width: 700px;
+  max-width: 800px;
   margin: auto;
 }
 h1 {
