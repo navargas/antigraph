@@ -28,19 +28,38 @@ Then you can select or create a team and an API key will be created.
 ```bash
 docker login svl.cumulusrepo.com
 # Username should be "token" and password will be the API key you generate
-docker tag svl.cumulusrepo.com/teamName/yourImage:versionName
+docker tag yourImage:versionName svl.cumulusrepo.com/teamName/yourImage:versionName
 docker push svl.cumulusrepo.com/teamName/yourImage:versionName
 ```
 Replace teamName, yourImage, versionName with the correct values.
 
 ## Binary Assets
+
+### Upload
 ```bash
 curl -v -s -H "X-API-KEY: key" -F "upload=@PATH_TO_FILE" https://svl.cumulusrepo.com/assets/assetName/assetVersion/
 ```
 Replace key, PATH_TO_FILE, assetName, and assetVersion with the correct values.
 
-The old "assets" command line tool will also work for uploading files.
 
+### Download
+With curl:
+```bash
+curl -O -J -H 'X-API-KEY: key' https://svl.cumulusrepo.com/assets/assetName/versionName/
+```
+Or ansible:
+```yml
+cumulus_repo:
+  asset: assetName
+  region: na
+  version: versionName
+  key: "{{ api_key }}"
+  dest: path/to/destination
+```
+The old "assets" command line tool will also work for uploading/downloading files.
+```bash
+assets fetch assetName:versionName
+```
 
 # Development
 
