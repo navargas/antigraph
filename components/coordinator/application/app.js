@@ -418,9 +418,10 @@ app.get('/teams', function(req, res) {
     });
 });
 app.get('/manifest', function(req, res) {
+    var key = req.session.key || req.headers['x-api-key'];
     var results = {};
     for (var ix in geo) {
-        ((target)=> {getRemoteAssets(geo[ix], req.session.key, function(err, data) {
+        ((target)=> {getRemoteAssets(geo[ix], key, function(err, data) {
             if (err)
                 results[target[1]] = {};
             else
@@ -436,7 +437,7 @@ app.get('/manifest', function(req, res) {
     }
 });
 app.get('/digest', function(req, res) {
-    var key = req.session.key || req.headers.key;
+    var key = req.session.key || req.headers.key || req.headers['x-api-key'];
     var nofmt = req.headers.nofmt;
     getKeyDoc(key, function(err, keydoc) {
         if (err) return res.status(501).send(err);
