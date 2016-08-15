@@ -117,12 +117,17 @@ app.post('/transfer', function(req, res) {
     ];
     console.log('Step List', steps);
     waterfall_exec(steps, txId, function(report, failed) {
-        console.log(report);
-        doc.updates = doc.updates.concat(report);
-        doc.failed = true;
-        console.log('final',doc);
-        res.status(200).send(doc);
+        db().insert({
+            type:'transferUpdate',
+            value:txId,
+            time: Date.now(),
+            update:'done',
+            failed: failed
+        }, (err, resp) => {
+            if (err) console.error(err);
+        });
     });
+    res.status(200).send(doc);
 });
 
 app.get('/list/:teamname?', function(req, res) {
