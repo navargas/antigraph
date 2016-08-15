@@ -282,6 +282,7 @@ function spawn(cmd, txId, callback) {
             error: error
         }, (err, resp) => {
             if (err) console.error(err);
+            console.log('Doc inserted', resp);
         });
         callback({stderr: stderr, stdout: stdout, sc: error.code, cmd: cmd});
     });
