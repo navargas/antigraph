@@ -15,5 +15,8 @@ repo_adapter:
     volumes:
         - /dockervolumes/ssl/:/ssl/
         - /dockervolumes/asset-data/:/var/asset-data/
+    environment:
+        - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
+        - CLOUDANT_PASSWORD=${CLOUDANT_PASSWORD}
     links:
         - authenticator

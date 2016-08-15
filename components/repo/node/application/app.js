@@ -9,6 +9,7 @@ var multer = require('multer');
 var bodyParser = require('body-parser');
 var fmt = require('util').format;
 var http = require('http');
+var db = require('./lib/db');
 var conf = {
     storageDir: '/var/asset-data/'
 }
@@ -271,6 +272,17 @@ function spawn(cmd, callback) {
             console.error(error);
         }
         if (!error) error = {code:0};
+        db().insert({
+            type:'transferUpdate',
+            value:txId,
+            time: Date.now(),
+            update:fmt('(%s) finished', cmd),
+            stdout: stdout,
+            stderr: stderr,
+            error: error
+        }, (err, resp) => {
+            if (err) console.error(err);
+        });
         callback({stderr: stderr, stdout: stdout, sc: error.code, cmd: cmd});
     });
 }
@@ -297,6 +309,7 @@ function waterfall_exec(statements, callback) {
 
 app.post('/transfer', function(req, res) {
     var doc = req.body;
+    var txId = doc._id;
     var key = doc.key;
     var team = doc.team;
     var asset = doc.asset;
@@ -314,12 +327,17 @@ app.post('/transfer', function(req, res) {
     ];
     console.log('Step List', steps);
     waterfall_exec(steps, function(report, failed) {
-        console.log(report);
-        doc.updates = doc.updates.concat(report);
-        doc.failed = (report[report.length-1].sc !== 0);
-        console.log('final',doc);
-        res.status(200).send(doc);
+        db().insert({
+            type:'transferUpdate',
+            value:txId,
+            time: Date.now(),
+            update:'done',
+            failed: failed
+        }, (err, resp) => {
+            if (err) console.error(err);
+        });
     });
+    res.status(200).send(doc);
 });
 
 
