@@ -6,7 +6,6 @@ var fs = require('fs');
 var path = require('path');
 var fmt = require('util').format;
 var request = require('request');
-//require('dotenv').config();
 var auth = require('./lib/auth');
 var db = require('./lib/db');
 var app = express();
@@ -216,7 +215,11 @@ function formDigestData(all, serviceLegend) {
             console.log(key, serviceIndex);
             var obj = all[key][serviceIndex];
             if (!obj) {
-                offline.push([key, serviceIndex]);
+                offline.push([key, serviceIndex, 'timeout']);
+                continue;
+            }
+            if (obj.error) {
+                offline.push([key, serviceIndex, obj.error]);
                 continue;
             }
             var geo = key;
@@ -507,11 +510,15 @@ app.get('/transfers/:id', function(req, res) {
             }
           }
         };
+        var updatesQuery = typeQuery('transferUpdate', req.params.id);
         db().find(query, function(err, data) {
             if (err) return res.status(501).send(err);
             // remove API key
             data.docs.map((o) => {o.key = undefined});
-            res.status(200).send(data.docs);
+            db().find(updatesQuery, function(err, updates) {
+                if (err) return res.status(501).send(err);
+                res.status(200).send({transfer:data.docs[0], updates:updates});
+            });
         });
     });
 });

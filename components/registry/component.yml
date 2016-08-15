@@ -11,6 +11,8 @@ registry_adapter:
     build: ./components/registry/adapter
     environment:
         - DOCKER_HOST=tcp://docker:2375
+        - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
+        - CLOUDANT_PASSWORD=${CLOUDANT_PASSWORD}
     links:
         - registry
         - docker

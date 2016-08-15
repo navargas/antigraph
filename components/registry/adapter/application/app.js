@@ -3,6 +3,7 @@ var exec = require('child_process').exec;
 var bodyParser = require('body-parser');
 var fs = require('fs');
 var path = require('path');
+var db = require('./lib/db');
 var fmt = require('util').format;
 var http = require('http');
 var app = express();
@@ -54,17 +55,29 @@ function getTagInfo(images, callback) {
     }
 }
 
-function spawn(cmd, callback) {
+function spawn(cmd, txId, callback) {
     exec(cmd, (error, stdout, stderr) => {
         if (error) {
             console.error(error);
         }
         if (!error) error = {code:0};
+        db().insert({
+            type:'transferUpdate',
+            value:txId,
+            time: Date.now(),
+            update:fmt('(%s) finished', cmd),
+            stdout: stdout,
+            stderr: stderr,
+            error: error
+        }, (err, resp) => {
+            if (err) console.error(err);
+            console.log('Doc inserted', resp);
+        });
         callback({stderr: stderr, stdout: stdout, sc: error.code, cmd: cmd});
     });
 }
 
-function waterfall_exec(statements, callback) {
+function waterfall_exec(statements, txId, callback) {
     var next = 0;
     var report = [];
     function caller(result) {
@@ -78,14 +91,15 @@ function waterfall_exec(statements, callback) {
         if (next == statements.length) {
             callback(report);
         } else {
-            spawn(statements[next], caller);
+            spawn(statements[next], txId, caller);
         }
     }
-    spawn(statements[next], caller);
+    spawn(statements[next], txId, caller);
 }
 
 app.post('/transfer', function(req, res) {
     var doc = req.body;
+    var txId = doc._id;
     var key = doc.key;
     var asset = doc.asset;
     var version = doc.version;
@@ -102,7 +116,7 @@ app.post('/transfer', function(req, res) {
         fmt('docker rmi %s %s', fqnNew, fqnOld)
     ];
     console.log('Step List', steps);
-    waterfall_exec(steps, function(report, failed) {
+    waterfall_exec(steps, txId, function(report, failed) {
         console.log(report);
         doc.updates = doc.updates.concat(report);
         doc.failed = true;
