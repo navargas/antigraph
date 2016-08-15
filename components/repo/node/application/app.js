@@ -266,7 +266,7 @@ function listImages(req, res) {
     });
 }
 
-function spawn(cmd, callback) {
+function spawn(cmd, txId, callback) {
     exec(cmd, (error, stdout, stderr) => {
         if (error) {
             console.error(error);
@@ -287,7 +287,7 @@ function spawn(cmd, callback) {
     });
 }
 
-function waterfall_exec(statements, callback) {
+function waterfall_exec(statements, txId, callback) {
     var next = 0;
     var report = [];
     function caller(result) {
@@ -301,10 +301,10 @@ function waterfall_exec(statements, callback) {
         if (next == statements.length) {
             callback(report);
         } else {
-            spawn(statements[next], caller);
+            spawn(statements[next], txId, caller);
         }
     }
-    spawn(statements[next], caller);
+    spawn(statements[next], txId, caller);
 }
 
 app.post('/transfer', function(req, res) {
@@ -326,7 +326,7 @@ app.post('/transfer', function(req, res) {
         fmt('curl %s -F "upload=@%s/%s" %s', header, path, filename, dest)
     ];
     console.log('Step List', steps);
-    waterfall_exec(steps, function(report, failed) {
+    waterfall_exec(steps, txId, function(report, failed) {
         db().insert({
             type:'transferUpdate',
             value:txId,
