@@ -70,7 +70,7 @@
       <td>{{ t.creator }}</td>
       <td>
         <a href="/transfers/{{ t._id }}">info</a>
-        <a v-on:click="hideTransfer(t._id)" v-if="t.finished">hide</a>
+        <a v-on:click="hideTransfer(t._id)">hide</a>
       </td>
     </tr>
   </tbody>
