@@ -517,7 +517,7 @@ app.get('/transfers/:id', function(req, res) {
             data.docs.map((o) => {o.key = undefined});
             db().find(updatesQuery, function(err, updates) {
                 if (err) return res.status(501).send(err);
-                res.status(200).send({transfer:data.docs[0], updates:updates});
+                res.status(200).send({transfer:data.docs[0], updates:updates.docs});
             });
         });
     });
