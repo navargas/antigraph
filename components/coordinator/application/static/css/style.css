@@ -10,6 +10,41 @@ body, html {
 h1 {
   font-weight: 100;
 }
+.highlightbox {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: xx-large;
+  margin: 36px auto;
+  padding: 20px;
+  border: 1px solid grey;
+  border-radius: 30px;
+}
+.consoleoutput {
+  max-height:300px;
+}
+.consoleoutput.good {
+  background-color: #efffef;
+}
+.consoleoutput.error {
+  background-color: #ffefef;
+}
+.updatebox {
+  margin: 5px inherit;
+}
+.updatebox.border {
+  border: 1px solid grey;
+  margin: 20px auto;
+  border-left: none;
+  border-right: none;
+  padding: 20px;
+}
+.updatedetail {
+  font-size: 16px;
+}
+.timestamp {
+  color: grey;
+}
 .redtext {
   color: red;
 }

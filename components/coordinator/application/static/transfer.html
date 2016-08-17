@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+
+<title>Cumulus Repo</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+<link href='https://fonts.googleapis.com/css?family=Roboto:400,100,200,300'
+  rel='stylesheet' type='text/css'>
+<link rel='stylesheet' href='/css/style.css'>
+<div id="content">
+<!-- content -->
+
+<h2>Cumulus Repo V2 Beta</h2>
+<hr>
+<p v-if="errorMsg" v-cloak class="errormessage">{{errorMsg}}</p>
+<h1>Transfer of {{transfer.info.asset}} ({{transfer.info.version}})</h1>
+<div class="highlightbox">
+  <div>{{transfer.info.source}}</div>
+  <div class="glyphicon glyphicon-circle-arrow-down"></div>
+  <div>{{transfer.info.target}}</div>
+</div>
+<h1>Updates</h1>
+<div v-for="tx in transfer.updates" class="updatebox"
+     v-bind:class="{ 'border':tx.showConsole }">
+  <div class="row">
+    <span class="timestamp col-xs-2">{{tx.time}}</span>
+    <span class="updatedetail col-xs-10">
+      <a v-on:click="openItem(tx)">{{tx.update}}</a>
+    </span>
+  </div>
+  <div class="row" v-if="tx.showConsole">
+    <div class="col-xs-6">
+      stdout<br>
+      <pre class="consoleoutput good">{{tx.stdout}}</pre>
+    </div>
+    <div class="col-xs-6">
+      stderr<br>
+      <pre class="consoleoutput error">{{tx.stderr}}</pre>
+    </div>
+    Status Code: {{tx.error.code}}
+  </div>
+</div>
+
+<!-- end content -->
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.25/vue.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-resource/0.9.3/vue-resource.min.js"></script>
+<script src="/js/common.js"></script>
+<script>
+var UPDATE=1000 * 5;//ms
+var uri = window.location.pathname.split('/');
+var transferId = uri[uri.indexOf('transfers') + 1]
+var transfer = Vue.resource('/transfers/'+transferId);
+
+var VMain = new Vue({
+  el: '#content',
+  ready: function() {
+    var that = this;
+    transfer.get().then(function(response) {
+      Vue.set(that, 'transfer', response.json());
+      console.log(that.transfer);
+    });
+  },
+  methods: {
+    openItem: function(obj) {
+      var state = obj.showConsole;
+      this.transfer.updates.map(function(obj) {
+        Vue.set(obj, 'showConsole', false);
+      });
+      Vue.set(obj, 'showConsole', !state);
+    }
+  },
+  data: {
+    transfer: undefined
+  }
+});
+</script>

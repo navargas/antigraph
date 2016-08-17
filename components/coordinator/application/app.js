@@ -497,6 +497,9 @@ app.delete('/transfers/:id', function(req, res) {
     });
 });
 app.get('/transfers/:id', function(req, res) {
+    if (req.query.format == 'html') {
+        return res.sendFile('static/transfer.html' , { root : __dirname});
+    }
     getKeyDoc(req.session.key, function(err, keydoc) {
         if (err) return res.status(501).send(err);
         var query = {
@@ -517,7 +520,7 @@ app.get('/transfers/:id', function(req, res) {
             data.docs.map((o) => {o.key = undefined});
             db().find(updatesQuery, function(err, updates) {
                 if (err) return res.status(501).send(err);
-                res.status(200).send({transfer:data.docs[0], updates:updates.docs});
+                res.status(200).send({info:data.docs[0], updates:updates.docs});
             });
         });
     });
