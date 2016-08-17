@@ -295,7 +295,7 @@ app.post('/uploadkey', function(req, res) {
         if (err) return fail(res, 'Unable to find key');
         req.session.email = doc.creator;
         req.session.key = key;
-        res.cookie('apikey', key, { maxAge: 900000 });
+        res.cookie('apikey', key, { maxAge: 1000 * 60 * 60 * 24 });
         return res.redirect('/');
     });
 });
@@ -326,7 +326,7 @@ app.all('/createkey/:team', function(req, res) {
                 console.error(err);
                 return res.redirect('/?error='+err);
             }
-            res.cookie('apikey', key.value, { maxAge: 900000 });
+            res.cookie('apikey', key, { maxAge: 1000 * 60 * 60 * 24 });
             res.cookie('signal_key', key.value, { maxAge: 900000 });
             req.session.key = key.value;
             res.redirect('/');
