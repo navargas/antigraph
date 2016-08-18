@@ -626,6 +626,7 @@ app.post('/transfers', function(req, res) {
             version: req.body.version,
             target: translateGeo(req.body.target),
             source: translateGeo(req.body.source),
+            delete: req.body.delete,
             active: true,
             started: false,
             finished: false,
@@ -637,8 +638,7 @@ app.post('/transfers', function(req, res) {
         console.log('New transfer request', transferDoc);
         var missingError = 'A required attribute was not set';
         if (!transferDoc.service || !transferDoc.asset ||
-            !transferDoc.version || !transferDoc.target ||
-            !transferDoc.creator || !transferDoc.source)
+            !transferDoc.version || !transferDoc.source)
                 return res.status(501).send({error:missingError});
         db().insert(transferDoc, function(err, value){
             if (err) {

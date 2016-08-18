@@ -315,18 +315,23 @@ app.post('/transfer', function(req, res) {
     var team = doc.team;
     var asset = doc.asset;
     var version = doc.version;
-    var target = doc.target;
-    var source = doc.source;
-    var header = fmt('-H "X-API-KEY: %s"', key);
     var path = fmt('/var/asset-data/%s/%s/%s', team, asset, version);
-    var files = fs.readdirSync(path);
-    var filename = filterSystemFiles(files)[0];
-    console.log('Found files', files, filename);
-    var dest = fmt('https://%s/assets/%s/%s/', target, asset, version);
-    var steps = [
-        fmt('ping -c 1 %s', target),
-        fmt('curl %s -s -F "upload=@%s/%s" %s', header, path, filename, dest)
-    ];
+    var steps = [];
+    if (!team || !asset || !version) {
+        steps = ['echo Team asset or version not set >&2; exit 1'];
+    } else if (doc.delete) {
+        steps = [fmt('rm -rf %s', path)];
+    } else {
+        var target = doc.target;
+        var header = fmt('-H "X-API-KEY: %s"', key);
+        var files = fs.readdirSync(path);
+        var filename = filterSystemFiles(files)[0];
+        var dest = fmt('https://%s/assets/%s/%s/', target, asset, version);
+        steps = [
+            fmt('ping -c 1 %s', target),
+            fmt('curl %s -s -F "upload=@%s/%s" %s', header, path, filename, dest)
+        ];
+    }
     console.log('Step List', steps);
     waterfall_exec(steps, txId, function(report, failed) {
         db().insert({
