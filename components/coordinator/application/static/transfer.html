@@ -11,11 +11,15 @@
 <h2>Cumulus Repo V2 Beta</h2>
 <hr>
 <p v-if="errorMsg" v-cloak class="errormessage">{{errorMsg}}</p>
-<h1>Transfer of {{transfer.info.asset}} ({{transfer.info.version}})</h1>
+<h1 v-if="transfer.info.delete">
+  Deletion of {{transfer.info.asset}} ({{transfer.info.version}})
+</h1>
+<h1 v-else>Transfer of {{transfer.info.asset}} ({{transfer.info.version}})</h1>
 <div class="highlightbox">
   <div>{{transfer.info.source}}</div>
-  <div class="glyphicon glyphicon-circle-arrow-down"></div>
-  <div>{{transfer.info.target}}</div>
+  <div v-if="transfer.info.delete" class="glyphicon glyphicon-trash"></div>
+  <div v-else class="glyphicon glyphicon-circle-arrow-down"></div>
+  <div v-if="!transfer.info.delete">{{transfer.info.target}}</div>
 </div>
 <h1>Updates</h1>
 <div v-for="tx in transfer.updates" class="updatebox"
@@ -56,7 +60,6 @@ var VMain = new Vue({
     var that = this;
     transfer.get().then(function(response) {
       Vue.set(that, 'transfer', response.json());
-      console.log(that.transfer);
     });
   },
   methods: {

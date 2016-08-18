@@ -196,9 +196,10 @@ var VMain = new Vue({
         var warn = 'Are you sure you want to delete ' + this.activeAsset +
                    ':' + version + ' from ' + this.assets.legend[source] + '?';
         var t = confirm(warn);
+        console.log(source);
         if (!t) return;
       }
-      if (!source) {
+      if (source === undefined) {
         alert('This asset is not found in any mirrors. Cannot transfer.');
         return;
       }
