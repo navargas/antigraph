@@ -107,14 +107,19 @@ app.post('/transfer', function(req, res) {
     var source = doc.source;
     var fqnOld = fmt('%s/%s:%s', source, asset, version);
     var fqnNew = fmt('%s/%s:%s', target, asset, version);
-    var steps = [
-        fmt('docker login -u token -p %s -e none', key, source),
-        fmt('docker pull %s', fqnOld),
-        fmt('docker tag %s %s', fqnOld, fqnNew),
-        fmt('docker login -u token -p %s -e none', key, target),
-        fmt('docker push %s', fqnNew),
-        fmt('docker rmi %s %s', fqnNew, fqnOld)
-    ];
+    var steps;
+    if (doc.delete) {
+        steps = ['echo Docker deletion not yet supported >&2; exit 1'];
+    } else {
+        steps = [
+            fmt('docker login -u token -p %s -e none', key, source),
+            fmt('docker pull %s', fqnOld),
+            fmt('docker tag %s %s', fqnOld, fqnNew),
+            fmt('docker login -u token -p %s -e none', key, target),
+            fmt('docker push %s', fqnNew),
+            fmt('docker rmi %s %s', fqnNew, fqnOld)
+        ];
+    }
     console.log('Step List', steps);
     waterfall_exec(steps, txId, function(report, failed) {
         db().insert({
