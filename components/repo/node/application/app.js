@@ -324,6 +324,7 @@ app.post('/transfer', function(req, res) {
     console.log('Found files', files, filename);
     var dest = fmt('https://%s/assets/%s/%s/', target, asset, version);
     var steps = [
+        fmt('ping -c 1 %s', target),
         fmt('curl %s -s -F "upload=@%s/%s" %s', header, path, filename, dest)
     ];
     console.log('Step List', steps);
