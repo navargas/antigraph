@@ -225,6 +225,7 @@ function formDigestData(all, serviceLegend) {
             var geo = key;
             for (var assetKey in obj.assets) {
                 var asset = obj.assets[assetKey];
+                if (!asset.name) continue;
                 if (!join[asset.name]) join[asset.name] = {};
                 for (var versionKey in asset.versions) {
                     var version = asset.versions[versionKey];

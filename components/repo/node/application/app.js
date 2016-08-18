@@ -247,7 +247,10 @@ function getImagesByTeam(team, callback) {
         for (var index in dir) {
             var asset = dir[index];
             (function(asset) {getVersions(team, asset, function(err, vers) {
-                result.push({name:asset, versions:vers});
+                if (vers.length > 0)
+                    result.push({name:asset, versions:vers});
+                else
+                    result.push({});
                 if (result.length == dir.length) callback(undefined, result);
             })})(asset);
         }
