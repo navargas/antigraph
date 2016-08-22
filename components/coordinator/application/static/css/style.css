@@ -4,6 +4,10 @@ body, html {
   max-width: 800px;
   margin: auto;
 }
+td {
+  word-wrap:break-word;
+  word-break:break-word;
+}
 #content {
   margin-bottom: 20px;
 }
