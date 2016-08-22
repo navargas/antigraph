@@ -104,7 +104,7 @@ app.post('/transfer', function(req, res) {
     var asset = doc.asset;
     var version = doc.version;
     var target = doc.target;
-    var source = doc.source;
+    var source = 'registry:5000';
     var fqnOld = fmt('%s/%s:%s', source, asset, version);
     var fqnNew = fmt('%s/%s:%s', target, asset, version);
     var steps;
@@ -112,7 +112,6 @@ app.post('/transfer', function(req, res) {
         steps = ['echo Docker deletion not yet supported >&2; exit 1'];
     } else {
         steps = [
-            fmt('docker login -u token -p %s -e none', key, source),
             fmt('docker pull %s', fqnOld),
             fmt('docker tag %s %s', fqnOld, fqnNew),
             fmt('docker login -u token -p %s -e none', key, target),

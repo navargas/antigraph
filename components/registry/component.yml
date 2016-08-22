@@ -5,6 +5,7 @@ registry:
 docker:
     image: docker:1.12.0-dind
     privileged: true
+    command: "--insecure-registry registry:5000"
     links:
         - registry
 registry_adapter:
