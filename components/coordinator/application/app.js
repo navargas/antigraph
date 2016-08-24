@@ -66,13 +66,15 @@ function getKeyDoc(key, callback) {
     });
 }
 
-function getMembers(team, callback) {
+function getMembers(team, fullDocs, callback) {
     var query = typeQuery('membership', team);
     db().find(query, function(err, value) {
         if (err) return callback(err);
         // if there are no rows return does_not_exist
         if (value.docs.length === 0)
             return callback({error:'key_does_not_exist'});
+        if (fullDocs)
+            return callback(null, value.docs);
         var result = value.docs.map((obj) => {return obj.member});
         callback(null, result);
     });
@@ -134,6 +136,21 @@ function getAllAssets(services, team, callback) {
             });
         })(services[index]);
     }
+}
+
+function getKeysByCreator(team, creator, callback) {
+    var query = {
+        selector: {
+            _id: {$gt: 0},
+            type: {$eq:'key'},
+            team: {$eq:team},
+            creator: {$eq:creator}
+        }
+    };
+    db().find(query, (err, data) => {
+        if (err) return callback(err);
+        callback(null, data.docs);
+    });
 }
 
 function teamManifest(team, callback) {
@@ -378,7 +395,40 @@ app.post('/newteam', function(req, res) {
         }
     });
 });
-
+app.delete('/members/:member', function(req, res) {
+    var target = req.params.member;
+    getKeyDoc(req.session.key, function(err, keydoc) {
+        if (err)
+            return res.status(501).send({error:'DB Error', more:err});
+        console.log(target, keydoc);
+        if (target == keydoc.creator)
+            return res.status(501).send({error:'Cannot delete self'});
+        getMembers(keydoc.team, true, function(err, members) {
+            if (err)
+                return res.status(501).send({error:'DB Error', more:err});
+            var targetDoc;
+            // create an array of email strings, setting targetDoc to the
+            // full document of the target membership
+            members = members.map(o => {
+                if (o.member == target)
+                    targetDoc = o;
+                else
+                    return o.member;
+            }).filter(o => {return o});
+            db().destroy(targetDoc._id, targetDoc._rev, (err, body) => {
+                if (err) return res.status(501).send(err);
+                getKeysByCreator(keydoc.team, target, (err, docs) => {
+                    if (err) return res.status(501).send(err);
+                    docs.map((o) => {o._deleted=true});
+                    db().bulk({docs:docs}, (err, data) => {
+                        console.log('Also deleting', docs);
+                        res.send(members);
+                    });
+                });
+            });
+        });
+    });
+});
 app.post('/members', function(req, res) {
     var member = req.body.email;
     if (!member) return res.status(501).send({error:'Member not found'});
@@ -404,7 +454,7 @@ app.get('/members', function(req, res) {
             return res.status(501).send({error:'DB Error', more:err});
         if (!keydoc.valid)
             return res.status(501).send({errror:'Invalid key'});
-        getMembers(keydoc.team, function(err, members) {
+        getMembers(keydoc.team, false, function(err, members) {
             if (err)
                 return res.status(501).send({error:'DB Error', more:err});
             res.send(members);

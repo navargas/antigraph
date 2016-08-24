@@ -91,6 +91,9 @@ tbody > tr:hover {
 .noclick {
   cursor: default !important;
 }
+.click {
+  cursor: pointer;
+}
 .nohl {
   background-color: white !important;
 }
@@ -115,4 +118,7 @@ button {
 }
 .nomargin {
   margin: 0px;
+}
+.pullright {
+  float: right;
 }

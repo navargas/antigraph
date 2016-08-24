@@ -96,7 +96,11 @@
 <table class="table table-bordered">
   <tbody>
     <tr v-for="member in members">
-      <td class="nohl noclick">{{member}}</td>
+      <td class="nohl noclick">
+        {{member}}
+        <span class="glyphicon glyphicon-trash pullright click"
+            v-on:click="removeMember(member)"></span>
+      </td>
     </tr>
     <tr>
       <td class="dim" v-on:click.stop.prevent="toggleEmailField()">
@@ -162,6 +166,18 @@ var VMain = new Vue({
       }
       return false;
     },
+    removeMember: function(member) {
+      console.log('Deleting', member);
+      var c = confirm('Are you sure you wish to delete ' + member + ' and ' +
+                      'all of their API Keys?');
+      if (!c) return;
+      var that = this;
+      this.$resource('/members/'+member).remove().then(function(response) {
+        Vue.set(that, 'members', response.json());
+      }, function(error) {
+        alert(JSON.stringify(error.json()));
+      });
+    },
     toggleEmailField: function() {
       this.showEmailForm = !this.showEmailForm;
     },
@@ -183,7 +199,8 @@ var VMain = new Vue({
     },
     transfer: function(version, destination, deleteAsset) {
       console.log(this.activeGroup, this.activeAsset, version, destination);
-      var versions = this.assets.assets[this.activeGroup][this.activeAsset][version];
+      var versions =
+        this.assets.assets[this.activeGroup][this.activeAsset][version];
       var source;
       for (var ix in versions) {
         if (versions[ix]) {
