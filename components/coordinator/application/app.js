@@ -344,7 +344,7 @@ app.all('/createkey/:team', function(req, res) {
                 console.error(err);
                 return res.redirect('/?error='+err);
             }
-            res.cookie('apikey', key, { maxAge: 1000 * 60 * 60 * 24 });
+            res.cookie('apikey', key.value, { maxAge: 1000 * 60 * 60 * 24 });
             res.cookie('signal_key', key.value, { maxAge: 900000 });
             req.session.key = key.value;
             res.redirect('/');
