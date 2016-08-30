@@ -336,6 +336,7 @@ app.all('/createkey/:team', function(req, res) {
             type: 'key',
             value: crypto.randomBytes(16).toString('hex'),
             creator: email,
+            created: Date.now(),
             valid: 'true',
             team: team
         }
