@@ -323,7 +323,10 @@ app.post('/transfer', function(req, res) {
     if (!team || !asset || !version) {
         steps = ['echo Team asset or version not set >&2; exit 1'];
     } else if (doc.delete) {
-        steps = [fmt('rm -rf %s', path)];
+        steps = [
+            fmt('[ -d \'%s\' ]', path),
+            fmt('rm -rf \'%s\'', path)
+        ];
     } else {
         var target = doc.target;
         var header = fmt('-H "X-API-KEY: %s"', key);
