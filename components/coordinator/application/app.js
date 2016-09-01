@@ -578,7 +578,8 @@ app.get('/transfers/:id', function(req, res) {
     });
 });
 app.get('/transfers', function(req, res) {
-    getKeyDoc(req.session.key, function(err, keydoc) {
+    var key = req.session.key || req.headers['x-api-key'];
+    getKeyDoc(key, function(err, keydoc) {
         if (err) return res.status(501).send(err);
         var query = {
           "selector": {
