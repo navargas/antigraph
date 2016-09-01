@@ -669,7 +669,8 @@ setInterval(function() {
 
 }, 1000 * 10);
 app.post('/transfers', function(req, res) {
-    getKeyDoc(req.session.key, function(err, keydoc) {
+    var key = req.session.key || req.headers['x-api-key'];
+    getKeyDoc(key, function(err, keydoc) {
         if (err) return res.status(501).send(err);
         var transferDoc = {
             type: 'transfer',
