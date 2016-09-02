@@ -61,6 +61,18 @@ The old "assets" command line tool will also work for uploading/downloading file
 assets fetch assetName:versionName
 ```
 
+### Delete
+With curl:
+```bash
+curl -H 'X-API-KEY: key_goes_here' -H "Content-Type: application/json" -d \
+    '{"asset":"assetName",
+      "version":"assetVersion",
+      "delete":true,
+      "service":"Binary Repo",
+      "source":"North America"}' \
+    https://svl.cumulusrepo.com/transfers
+```
+
 # Development
 
 *Behind the scenes info. You can ignore this section if you are just using Cumulus Repo.*
