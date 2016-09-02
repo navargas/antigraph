@@ -24,7 +24,8 @@
 <h1>Updates</h1>
 <div v-for="tx in transfer.updates" class="updatebox"
      v-bind:class="{ 'border':tx.showConsole }">
-  <div class="row">
+  <div class="row"
+    v-bind:class="{ 'redBg' : (tx.error.code !== undefined && tx.error.code !== 0) }">
     <span class="timestamp col-xs-2">{{tx.time}}</span>
     <span class="updatedetail col-xs-10">
       <a v-on:click="openItem(tx)">{{tx.update}}</a>
