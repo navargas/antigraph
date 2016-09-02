@@ -565,7 +565,21 @@ app.get('/transfers/:id', function(req, res) {
             }
           }
         };
-        var updatesQuery = typeQuery('transferUpdate', req.params.id);
+        //var updatesQuery = typeQuery('transferUpdate', req.params.id);
+        var updatesQuery = {
+            "selector": {
+                "time": {"$gt": 0},
+                "type": {
+                    "$eq":'transferUpdate'
+                },
+                "value": {
+                    "$eq":req.params.id
+                }
+            },
+            "sort": [{
+                "time": "desc"
+            }]
+        };
         db().find(query, function(err, data) {
             if (err) return res.status(501).send(err);
             // remove API key
