@@ -312,6 +312,7 @@ function waterfall_exec(statements, txId, callback) {
 }
 
 app.post('/transfer', function(req, res) {
+    var valid = /[a-zA-Z0-9\_\-\.]+/.test;
     var doc = req.body;
     var txId = doc._id;
     var key = doc.key;
@@ -320,8 +321,8 @@ app.post('/transfer', function(req, res) {
     var version = doc.version;
     var path = fmt('/var/asset-data/%s/%s/%s', team, asset, version);
     var steps = [];
-    if (!team || !asset || !version) {
-        steps = ['echo Team asset or version not set >&2; exit 1'];
+    if (!valid(team) || !valid(asset) || !valid(version)) {
+        steps = ['echo Invalid characters in request >&2; exit 1'];
     } else if (doc.delete) {
         steps = [
             fmt('[ -d \'%s\' ]', path),
