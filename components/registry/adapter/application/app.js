@@ -98,7 +98,7 @@ function waterfall_exec(statements, txId, callback) {
 }
 
 app.post('/transfer', function(req, res) {
-    var valid = /[a-zA-Z0-9\_\-\.]+/.test;
+    var valid = /[a-zA-Z0-9\_\-\.]+/;
     var doc = req.body;
     var txId = doc._id;
     var key = doc.key;
@@ -109,7 +109,7 @@ app.post('/transfer', function(req, res) {
     var fqnOld = fmt('%s/%s:%s', source, asset, version);
     var fqnNew = fmt('%s/%s:%s', target, asset, version);
     var steps;
-    if (!valid(target) || !valid(asset) || !valid(version)) {
+    if (!valid.test(target) || !valid.test(asset) || !valid.test(version)) {
         steps = ['echo Invalid characters in request >&2; exit 1'];
     } else if (doc.delete) {
         steps = ['echo Docker deletion not yet supported >&2; exit 1'];
