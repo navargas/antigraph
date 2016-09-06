@@ -690,7 +690,7 @@ app.post('/transfers', function(req, res) {
             type: 'transfer',
             service: translateService(req.body.service),
             asset: req.body.asset,
-            started: Date.now(),
+            time: Date.now(),
             version: req.body.version,
             target: translateGeo(req.body.target),
             source: translateGeo(req.body.source),
