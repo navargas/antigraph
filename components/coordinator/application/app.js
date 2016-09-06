@@ -10,6 +10,7 @@ var auth = require('./lib/auth');
 var db = require('./lib/db');
 var app = express();
 var validName = /^[a-z0-9\_]{2,}$/;
+var t_hour = 1000 * 60 * 60;
 
 var sessionOpts = {
     secret: process.env.sessionsecret || 'bc391664e96a4fc291d4866358b816af',
@@ -596,19 +597,27 @@ app.get('/transfers', function(req, res) {
     getKeyDoc(key, function(err, keydoc) {
         if (err) return res.status(501).send(err);
         var query = {
-          "selector": {
-            "_id": {"$gt": 0},
-            "type": {
-              "$eq":'transfer'
+            "selector": {
+                "time": {"$gt": Date.now() - t_hour * 24},
+                "type": {
+                    "$eq":'transfer'
+                },
+                "active": {
+                    "$eq":true
+                },
+                "team": {
+                    "$eq":keydoc.team
+                }
             },
-            "active": {
-              "$eq":true
-            },
-            "team": {
-              "$eq":keydoc.team
-            }
-          }
+            "sort": [{
+                "time": "desc"
+            }]
         };
+        if (req.query.all == 'yes') {
+            query.selector.time["$gt"] = 0;
+            delete query.selector["active"];
+        }
+        console.log(query);
         db().find(query, function(err, data) {
             if (err) return res.status(501).send(err);
             // remove API key
