@@ -33,6 +33,35 @@ docker push svl.cumulusrepo.com/teamName/yourImage:versionName
 ```
 Replace teamName, yourImage, versionName with the correct values.
 
+or with Kubernetes:
+```yml
+containers:
+   - name: containerName
+     image: geo.cumulusrepo.com/team/image:version
+     # replace geo, team, image, and version with correct values
+```
+**Note** Kubernetes private registry authentication can be a little unintuitive. It will not read your default "~/.docker/config.json" file as you would expect. Instead you need to copy this file to the root ("/") directory (check https://github.com/kubernetes/kubernetes/issues/10383#issuecomment-145672470 for more info) and modify it so that the contents of "auths" are at the top level. 
+
+Example
+```json
+{
+    "auths": {
+        "cdsdev.cumulusrepo.com": {
+            "auth": "..."
+        }
+    }
+}
+```
+in ~/.docker/config.json should become
+```json
+{
+    "cdsdev.cumulusrepo.com": {
+        "auth": "..."
+    }
+}
+```
+in /.dockercfg
+
 ## Binary Assets
 
 ### Upload
@@ -43,6 +72,7 @@ Replace key, PATH_TO_FILE, assetName, and assetVersion with the correct values.
 
 
 ### Download
+
 With curl:
 ```bash
 curl -O -J -H 'X-API-KEY: key' https://svl.cumulusrepo.com/assets/assetName/versionName/
