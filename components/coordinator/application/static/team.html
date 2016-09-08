@@ -198,7 +198,7 @@ var VMain = new Vue({
       if (group === this.activeGroup && asset === this.activeAsset) {
         this.activeAsset = null;
         this.activeGroup = null;
-        location.hash = '';
+        location.hash = '#none';
         return;
       }
       this.activeAsset = asset;
