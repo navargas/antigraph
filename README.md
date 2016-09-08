@@ -91,8 +91,9 @@ The old "assets" command line tool will also work for uploading/downloading file
 assets fetch assetName:versionName
 ```
 
-### Delete
-With curl:
+# Delete
+
+Versions can either be deleted with the trash icon on the UI, or with curl:
 ```bash
 curl -H 'X-API-KEY: key_goes_here' -H "Content-Type: application/json" -d \
     '{"asset":"assetName",
@@ -102,6 +103,20 @@ curl -H 'X-API-KEY: key_goes_here' -H "Content-Type: application/json" -d \
       "source":"North America"}' \
     https://svl.cumulusrepo.com/transfers
 ```
+
+# Transfer
+Versions can either be transfered with the "transfer" button on the UI,
+or with curl:
+```bash
+curl -H 'X-API-KEY: key_goes_here' -H "Content-Type: application/json" -d \
+    '{"asset":"assetName",
+      "version":"assetVersion",
+      "service":"Binary Repo",
+      "source":"North America",
+      "target":"Western Europe"}' \
+    https://svl.cumulusrepo.com/transfers
+```
+
 
 # Development
 
