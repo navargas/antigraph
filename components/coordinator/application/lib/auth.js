@@ -1,5 +1,6 @@
 var passport = require('passport');
 var LdapStrategy = require('passport-ldapauth').Strategy;
+var db = require('./db');
 
 var LDAP_OPTS = {
     server: {
@@ -44,4 +45,48 @@ function isValidUser(email, password, callback) {
     }, 1000 * 5);
 }
 
+var keyCache = {};
+function getKeyDoc(key, callback) {
+    var query = {
+        "selector": {
+            "_id": {"$gt": 0},
+            "type": { "$eq":'key' },
+            "value": { "$eq":key }
+        }
+    };
+    var now = Date.now();
+    var tenMin = 1000 * 60 * 10;
+    if (keyCache[key] && keyCache[key].expire > now)
+        return callback(null, keyCache[key].doc);
+    console.log(query);
+    db().find(query, function(err, value) {
+        console.log('value', value);
+        if (err)
+            return callback(err);
+        // if there are no rows return does_not_exist
+        if (value.docs.length === 0)
+            return callback({error:'key_does_not_exist'});
+        keyCache[key] = {expire: Date.now() + tenMin, doc: value.docs[0]};
+        callback(null, value.docs[0]);
+    });
+}
+
+function invalidateKey(key) {
+    keyCache[key] = undefined;
+}
+
+function verify(req, res, next) {
+    var key = req.session.key ||
+              req.headers['x-api-key'] ||
+              req.cookies.apikey;
+    getKeyDoc(key, function(err, keydoc) {
+        if (err) return res.status(500).send(err);
+        req.keydoc = keydoc;
+        next();
+    });
+}
+
+module.exports.invalidateKey = invalidateKey;
 module.exports.isValidUser = isValidUser;
+module.exports.getKeyDoc = getKeyDoc;
+module.exports.verify = verify;

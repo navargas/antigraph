@@ -31,44 +31,14 @@ process.on('uncaughtException', function (error) {
     console.error(error.stack);
 });
 
-function typeQuery(type, val) {
-    var query = {
-      "selector": {
-        "_id": {"$gt": 0},
-        "type": {
-          "$eq":type
-        },
-        "value": {
-          "$eq":val
-        }
-      }
-    };
-    return query;
-}
-
-var keyCache = {};
-function getKeyDoc(key, callback) {
-    var query = typeQuery('key', key);
-    var now = Date.now();
-    var tenMin = 1000 * 60 * 10;
-    if (keyCache[key] && keyCache[key].expire > now) {
-        console.log('Cache hit', key, 'expires', keyCache[key].expire);
-        return callback(null, keyCache[key].doc);
-    }
-    console.log(query);
-    db().find(query, function(err, value) {
-        console.log('value', value);
-        if (err) return callback(err);
-        // if there are no rows return does_not_exist
-        if (value.docs.length === 0)
-            return callback({error:'key_does_not_exist'});
-        keyCache[key] = {expire: Date.now() + tenMin, doc: value.docs[0]};
-        callback(null, value.docs[0]);
-    });
-}
-
 function getMembers(team, fullDocs, callback) {
-    var query = typeQuery('membership', team);
+    var query = {
+        'selector': {
+            '_id': { '$gt': 0 },
+            'type': { '$eq':'membership' },
+            'value': { '$eq':team }
+        }
+    };
     db().find(query, function(err, value) {
         if (err) return callback(err);
         // if there are no rows return does_not_exist
@@ -310,7 +280,7 @@ app.post('/uploadkey', function(req, res) {
     if (!key) {
         return fail(res, 'Key required');
     }
-    getKeyDoc(key, function(err, doc) {
+    auth.getKeyDoc(key, function(err, doc) {
         if (err) return fail(res, 'Unable to find key');
         req.session.email = doc.creator;
         req.session.key = key;
@@ -359,22 +329,16 @@ app.all('/signout', function(req, res) {
     res.clearCookie('apikey');
     res.redirect('/');
 });
-app.delete('/team', function(req, res) {
-    getKeyDoc(req.session.key, function(err, doc) {
-        if (err) {
-            console.error(err);
-            return res.status(501).send({error:'Could not delete team'});
-        }
-        teamManifest(doc.team, function(docs) {
-            docs.map((o) => {o._deleted=true});
-            db().bulk({docs:docs}, function(err, data) {
-                if (err) {
-                    console.error(err);
-                    res.status(501).end();
-                }
-                keyCache[req.session.key] = undefined;
-                return res.status(201).send();
-            });
+app.delete('/team', auth.verify, function(req, res) {
+    teamManifest(req.keydoc.team, function(docs) {
+        docs.map((o) => {o._deleted=true});
+        db().bulk({docs:docs}, function(err, data) {
+            if (err) {
+                console.error(err);
+                res.status(501).end();
+            }
+            auth.invalidateKey(req.keydoc.value);
+            return res.status(201).send();
         });
     });
 });
@@ -397,70 +361,54 @@ app.post('/newteam', function(req, res) {
         }
     });
 });
-app.delete('/members/:member', function(req, res) {
+app.delete('/members/:member', auth.verify, function(req, res) {
     var target = req.params.member;
-    getKeyDoc(req.session.key, function(err, keydoc) {
+    if (target == req.keydoc.creator)
+        return res.status(501).send({error:'Cannot delete self'});
+    getMembers(req.keydoc.team, true, function(err, members) {
         if (err)
             return res.status(501).send({error:'DB Error', more:err});
-        console.log(target, keydoc);
-        if (target == keydoc.creator)
-            return res.status(501).send({error:'Cannot delete self'});
-        getMembers(keydoc.team, true, function(err, members) {
-            if (err)
-                return res.status(501).send({error:'DB Error', more:err});
-            var targetDoc;
-            // create an array of email strings, setting targetDoc to the
-            // full document of the target membership
-            members = members.map(o => {
-                if (o.member == target)
-                    targetDoc = o;
-                else
-                    return o.member;
-            }).filter(o => {return o});
-            db().destroy(targetDoc._id, targetDoc._rev, (err, body) => {
+        var targetDoc;
+        // create an array of email strings, setting targetDoc to the
+        // full document of the target membership
+        members = members.map(o => {
+            if (o.member == target)
+                targetDoc = o;
+            else
+                return o.member;
+        }).filter(o => {return o});
+        db().destroy(targetDoc._id, targetDoc._rev, (err, body) => {
+            if (err) return res.status(501).send(err);
+            getKeysByCreator(req.keydoc.team, target, (err, docs) => {
                 if (err) return res.status(501).send(err);
-                getKeysByCreator(keydoc.team, target, (err, docs) => {
-                    if (err) return res.status(501).send(err);
-                    docs.map((o) => {o._deleted=true});
-                    db().bulk({docs:docs}, (err, data) => {
-                        console.log('Also deleting', docs);
-                        res.send(members);
-                    });
+                docs.map((o) => {o._deleted=true});
+                db().bulk({docs:docs}, (err, data) => {
+                    console.log('Also deleting', docs);
+                    res.send(members);
                 });
             });
         });
     });
 });
-app.post('/members', function(req, res) {
+app.post('/members', auth.verify, function(req, res) {
     var member = req.body.email;
     if (!member) return res.status(501).send({error:'Member not found'});
-    getKeyDoc(req.session.key, function(err, doc) {
+    var memberDoc = {
+        type: 'membership',
+        value: req.keydoc.team,
+        member: member,
+        admin: true
+    };
+    db().insert(memberDoc, function(err, data) {
         if (err) return res.status(501).send(err);
-        var memberDoc = {
-            type: 'membership',
-            value: doc.team,
-            member: member,
-            admin: true
-        };
-        db().insert(memberDoc, function(err, data) {
-            if (err) return res.status(501).send(err);
-            res.redirect('/');
-        });
+        res.redirect('/');
     });
 });
-app.get('/members', function(req, res) {
-    if (!req.session.key)
-        return res.status(501).send({error:'Invalid key'});
-    getKeyDoc(req.session.key, function(err, keydoc) {
+app.get('/members', auth.verify, function(req, res) {
+    getMembers(req.keydoc.team, false, function(err, members) {
         if (err)
             return res.status(501).send({error:'DB Error', more:err});
-        if (!keydoc.valid)
-            return res.status(501).send({errror:'Invalid key'});
-        getMembers(keydoc.team, false, function(err, members) {
-            if (err)
-                return res.status(501).send({error:'DB Error', more:err});
-            res.send(members);
-        });
+        res.send(members);
     });
 });
 app.get('/teams', function(req, res) {
@@ -492,23 +440,19 @@ app.get('/manifest', function(req, res) {
         })})(geo[ix]);
     }
 });
-app.get('/digest', function(req, res) {
-    var key = req.session.key || req.headers.key || req.headers['x-api-key'];
+app.get('/digest', auth.verify, function(req, res) {
     var nofmt = req.headers.nofmt;
-    getKeyDoc(key, function(err, keydoc) {
-        if (err) return res.status(501).send(err);
-        getAllAssets(services, keydoc.team, function(data) {
-            if (nofmt) return res.send(data);
-            var services = Object.keys(data);
-            var result = [];
-            // Sort services alphabetically so interface is consistent
-            services.sort();
-            for (var index in services) {
-                data[services[index]].service = services[index];
-                result.push(data[services[index]]);
-            }
-            res.send(result);
-        });
+    getAllAssets(services, req.keydoc.team, function(data) {
+        if (nofmt) return res.send(data);
+        var services = Object.keys(data);
+        var result = [];
+        // Sort services alphabetically so interface is consistent
+        services.sort();
+        for (var index in services) {
+            data[services[index]].service = services[index];
+            result.push(data[services[index]]);
+        }
+        res.send(result);
     });
 });
 function translateService(display) {
@@ -523,107 +467,96 @@ function translateGeo(display) {
         if (geo[ix][1] == display) return geo[ix][0];
     }
 }
-app.delete('/transfers/:id', function(req, res) {
-    getKeyDoc(req.session.key, function(err, keydoc) {
+app.delete('/transfers/:id', auth.verify, function(req, res) {
+    var query = {
+      "selector": {
+        "_id": {"$eq": req.params.id},
+        "type": {
+          "$eq":'transfer'
+        },
+        "team": {
+          "$eq":req.keydoc.team
+        }
+      }
+    };
+    db().find(query, function(err, data) {
         if (err) return res.status(501).send(err);
-        var query = {
-          "selector": {
-            "_id": {"$eq": req.params.id},
-            "type": {
-              "$eq":'transfer'
-            },
-            "team": {
-              "$eq":keydoc.team
-            }
-          }
-        };
-        db().find(query, function(err, data) {
+        var doc = data.docs[0];
+        if (!doc) return res.status(404).send({error:'Asset not found'});
+        doc.active = false;
+        db().insert(doc, doc._id, function(err, data) {
             if (err) return res.status(501).send(err);
-            var doc = data.docs[0];
-            if (!doc) return res.status(404).send({error:'Asset not found'});
-            doc.active = false;
-            db().insert(doc, doc._id, function(err, data) {
-                if (err) return res.status(501).send(err);
-                res.status(200).send({status: 'done'});
-            });
+            res.status(200).send({status: 'done'});
         });
     });
 });
-app.get('/transfers/:id', function(req, res) {
+app.get('/transfers/:id', auth.verify, function(req, res) {
     if (req.query.format == 'html') {
         return res.sendFile('static/transfer.html' , { root : __dirname});
     }
-    getKeyDoc(req.session.key, function(err, keydoc) {
-        if (err) return res.status(501).send(err);
-        var query = {
-          "selector": {
-            "_id": {"$eq": req.params.id},
+    var query = {
+      "selector": {
+        "_id": {"$eq": req.params.id},
+        "type": {
+          "$eq":'transfer'
+        },
+        "team": {
+          "$eq":req.keydoc.team
+        }
+      }
+    };
+    var updatesQuery = {
+        "selector": {
+            "time": {"$gt": 0},
             "type": {
-              "$eq":'transfer'
+                "$eq":'transferUpdate'
             },
-            "team": {
-              "$eq":keydoc.team
+            "value": {
+                "$eq":req.params.id
             }
-          }
-        };
-        //var updatesQuery = typeQuery('transferUpdate', req.params.id);
-        var updatesQuery = {
-            "selector": {
-                "time": {"$gt": 0},
-                "type": {
-                    "$eq":'transferUpdate'
-                },
-                "value": {
-                    "$eq":req.params.id
-                }
-            },
-            "sort": [{
-                "time": "desc"
-            }]
-        };
-        db().find(query, function(err, data) {
+        },
+        "sort": [{
+            "time": "desc"
+        }]
+    };
+    db().find(query, function(err, data) {
+        if (err) return res.status(501).send(err);
+        // remove API key
+        data.docs.map((o) => {o.key = undefined});
+        db().find(updatesQuery, function(err, updates) {
             if (err) return res.status(501).send(err);
-            // remove API key
-            data.docs.map((o) => {o.key = undefined});
-            db().find(updatesQuery, function(err, updates) {
-                if (err) return res.status(501).send(err);
-                res.status(200).send({info:data.docs[0], updates:updates.docs});
-            });
+            res.status(200).send({info:data.docs[0], updates:updates.docs});
         });
     });
 });
-app.get('/transfers', function(req, res) {
-    var key = req.session.key || req.headers['x-api-key'];
-    getKeyDoc(key, function(err, keydoc) {
-        if (err) return res.status(501).send(err);
-        var query = {
-            "selector": {
-                "time": {"$gt": Date.now() - t_hour * 24},
-                "type": {
-                    "$eq":'transfer'
-                },
-                "active": {
-                    "$eq":true
-                },
-                "team": {
-                    "$eq":keydoc.team
-                }
+app.get('/transfers', auth.verify, function(req, res) {
+    var query = {
+        "selector": {
+            "time": {"$gt": Date.now() - t_hour * 24},
+            "type": {
+                "$eq":'transfer'
             },
-            "sort": [{
-                "time": "desc"
-            }]
-        };
-        if (req.query.all == 'yes') {
-            query.selector.time["$gt"] = 0;
-            delete query.selector["active"];
-        }
-        console.log(query);
-        db().find(query, function(err, data) {
-            if (err) return res.status(501).send(err);
-            // remove API key
-            data.docs.map((o) => {o.key = undefined});
-            res.status(200).send(data.docs);
-        });
+            "active": {
+                "$eq":true
+            },
+            "team": {
+                "$eq":req.keydoc.team
+            }
+        },
+        "sort": [{
+            "time": "desc"
+        }]
+    };
+    if (req.query.all == 'yes') {
+        query.selector.time["$gt"] = 0;
+        delete query.selector["active"];
+    }
+    console.log(query);
+    db().find(query, function(err, data) {
+        if (err) return res.status(501).send(err);
+        // remove API key
+        data.docs.map((o) => {o.key = undefined});
+        res.status(200).send(data.docs);
     });
 });
 // Every 10 seconds check for transfers
@@ -691,49 +624,45 @@ setInterval(function() {
     });
 
 }, 1000 * 10);
-app.post('/transfers', function(req, res) {
-    var key = req.session.key || req.headers['x-api-key'];
-    getKeyDoc(key, function(err, keydoc) {
-        if (err) return res.status(501).send(err);
-        var transferDoc = {
-            type: 'transfer',
-            service: translateService(req.body.service),
-            asset: req.body.asset,
-            time: Date.now(),
-            version: req.body.version,
-            target: translateGeo(req.body.target),
-            source: translateGeo(req.body.source),
-            delete: req.body.delete,
-            active: true,
-            started: false,
-            finished: false,
-            updates: [],
-            key: req.session.key,
-            team: keydoc.team,
-            creator: keydoc.creator
+app.post('/transfers', auth.verify, function(req, res) {
+    var transferDoc = {
+        type: 'transfer',
+        service: translateService(req.body.service),
+        asset: req.body.asset,
+        time: Date.now(),
+        version: req.body.version,
+        target: translateGeo(req.body.target),
+        source: translateGeo(req.body.source),
+        delete: req.body.delete,
+        active: true,
+        started: false,
+        finished: false,
+        updates: [],
+        key: req.session.key,
+        team: req.keydoc.team,
+        creator: req.keydoc.creator
+    }
+    console.log('New transfer request', transferDoc);
+    var missingError = 'A required attribute was not set';
+    if (!transferDoc.service || !transferDoc.asset ||
+        !transferDoc.version || !transferDoc.source)
+            return res.status(501).send({error:missingError});
+    db().insert(transferDoc, function(err, value){
+        if (err) {
+            console.error(err);
+            return res.status(501).send(err);
         }
-        console.log('New transfer request', transferDoc);
-        var missingError = 'A required attribute was not set';
-        if (!transferDoc.service || !transferDoc.asset ||
-            !transferDoc.version || !transferDoc.source)
-                return res.status(501).send({error:missingError});
-        db().insert(transferDoc, function(err, value){
-            if (err) {
-                console.error(err);
-                return res.status(501).send(err);
-            }
-            console.log('New Transfer', transferDoc);
-            // remove key and echo doc
-            transferDoc.key = undefined;
-            res.status(200).send(transferDoc);
-        });
+        console.log('New Transfer', transferDoc);
+        // remove key and echo doc
+        transferDoc.key = undefined;
+        res.status(200).send(transferDoc);
     });
 });
 app.get('/', function(req, res) {
     console.log(req.session.email, req.session.key);
     if (!req.session.key && req.cookies.apikey)
         req.session.key = req.cookies.apikey;
-    if (req.session.key) getKeyDoc(req.session.key, function(err, keydoc) {
+    if (req.session.key) auth.getKeyDoc(req.session.key, function(err, keydoc) {
         if (!err)
             return res.sendFile('static/team.html' , { root : __dirname});
         req.session.key = undefined;
