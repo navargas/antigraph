@@ -86,12 +86,13 @@
 <h1>Currently Unreachable</h1>
 <table v-if="assets.offline && assets.offline.length > 0" class="table">
   <thead>
-    <tr><th>Geography</th><th>Service</th></tr>
+    <tr><th>Geography</th><th>Service</th><th>Reason</th></tr>
   </thead>
   <tbody>
     <tr v-for="geo in assets.offline">
       <td>{{ geo[0] }}</td>
       <td>{{ geo[1] }}</td>
+      <td>{{ geo[2] }}</td>
     </tr>
   </tbody>
 </table>
