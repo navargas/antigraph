@@ -708,7 +708,7 @@ app.post('/transfers', function(req, res) {
             started: false,
             finished: false,
             updates: [],
-            key: req.session.key,
+            key: key,
             team: keydoc.team,
             creator: keydoc.creator
         }
