@@ -76,7 +76,7 @@ function getRemoteAssets(target, key, callback) {
     var req = {
         url: url,
         timeout: 3000,
-        headers: {key: key, nofmt:'yes'}
+        headers: {'x-api-key': key, nofmt:'yes'}
     }
     request(req, function(err, res, body) {
         console.log(target, body);
@@ -125,7 +125,6 @@ function getKeysByCreator(team, creator, callback) {
 }
 
 function teamManifest(team, callback) {
-    console.log('ma', team);
     function format(nested) {
         var finalArr = [];
         // join arrays
@@ -421,23 +420,25 @@ app.get('/teams', function(req, res) {
         res.status(200).send(result);
     });
 });
-app.get('/manifest', function(req, res) {
-    var key = req.session.key || req.headers['x-api-key'];
+app.get('/manifest', auth.verify, function(req, res) {
     var results = {};
     for (var ix in geo) {
-        ((target)=> {getRemoteAssets(geo[ix], key, function(err, data) {
-            if (err)
-                results[target[1]] = {};
-            else
-                results[target[1]] = data;
-            console.log('send attempt', Object.keys(results).length, geo.length);
-            if (Object.keys(results).length == geo.length) {
-                var serviceLegend = services.map((o)=>{return o.split('/')[1];});
-                console.log(results, serviceLegend);
-                var displayForm = formDigestData(results, serviceLegend);
-                res.send(displayForm);
-            }
-        })})(geo[ix]);
+        ((target)=> {
+            getRemoteAssets(geo[ix], req.keydoc.value, function(err, data) {
+                if (err)
+                    results[target[1]] = {};
+                else
+                    results[target[1]] = data;
+                if (Object.keys(results).length == geo.length) {
+                    var serviceLegend = services.map((o)=>{
+                        return o.split('/')[1];
+                    });
+                    console.log(results, serviceLegend);
+                    var displayForm = formDigestData(results, serviceLegend);
+                    res.send(displayForm);
+                }
+            })
+        })(geo[ix]);
     }
 });
 app.get('/digest', auth.verify, function(req, res) {
