@@ -639,7 +639,7 @@ app.post('/transfers', auth.verify, function(req, res) {
         started: false,
         finished: false,
         updates: [],
-        key: req.session.key,
+        key: req.keydoc.value,
         team: req.keydoc.team,
         creator: req.keydoc.creator
     }
