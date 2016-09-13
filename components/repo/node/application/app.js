@@ -312,7 +312,7 @@ function waterfall_exec(statements, txId, callback) {
 }
 
 app.post('/transfer', function(req, res) {
-    var valid = /(?![\.]{1,2}$)[a-zA-Z0-9\_\-\.]+/;
+    var valid = /(?![\.]{1,2}$)[a-zA-Z0-9\_\-\.\:]+/;
     var doc = req.body;
     var txId = doc._id;
     var key = doc.key;
