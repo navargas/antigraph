@@ -5,6 +5,8 @@ repo:
     volumes:
         - /dockervolumes/ssl/:/ssl/
         - /dockervolumes/asset-data/:/var/asset-data/
+    environment:
+        - TZ=${TZ}
     links:
         - authenticator
         - repo_adapter
