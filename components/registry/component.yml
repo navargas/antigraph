@@ -19,3 +19,5 @@ registry_adapter:
     links:
         - registry
         - docker
+    volumes:
+        - /dockervolumes/registry-data/:/registry-data/
