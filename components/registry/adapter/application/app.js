@@ -113,7 +113,9 @@ app.post('/transfer', function(req, res) {
     if (!valid.test(target) || !valid.test(asset) || !valid.test(version)) {
         steps = ['echo Invalid characters in request >&2; exit 1'];
     } else if (doc.delete) {
-        steps = [fmt('delete_image %s %s %s', team, asset, version)];
+        // Extract imagename from "teamname/imagename"
+        var image = asset.split('/')[1];
+        steps = [fmt('delete_image "%s" "%s" "%s"', team, image, version)];
     } else {
         steps = [
             fmt('docker pull %s', fqnOld),
