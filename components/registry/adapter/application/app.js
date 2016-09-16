@@ -102,6 +102,7 @@ app.post('/transfer', function(req, res) {
     var doc = req.body;
     var txId = doc._id;
     var key = doc.key;
+    var team = doc.team;
     var asset = doc.asset;
     var version = doc.version;
     var target = doc.target;
@@ -112,7 +113,7 @@ app.post('/transfer', function(req, res) {
     if (!valid.test(target) || !valid.test(asset) || !valid.test(version)) {
         steps = ['echo Invalid characters in request >&2; exit 1'];
     } else if (doc.delete) {
-        steps = ['echo Docker deletion not yet supported >&2; exit 1'];
+        steps = [fmt('delete_image %s %s %s', team, asset, version)];
     } else {
         steps = [
             fmt('docker pull %s', fqnOld),

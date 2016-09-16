@@ -1,0 +1,47 @@
+#!/bin/bash
+
+team=$1
+image=$2
+version=$3
+
+GET_DIGEST="Accept: application/vnd.docker.distribution.manifest.v2+json"
+SERVER="registry:5000"
+
+
+if [ -z "$team" ]; then
+    echo "Missing team argument" 2>&1
+    exit 1
+fi
+
+if [ -z "$image" ]; then
+    echo "Missing image argument" 2>&1
+    exit 1
+fi
+
+if [ -z "$version" ]; then
+    echo "Missing version argument" 2>&1
+    exit 1
+fi
+
+digest=$(
+    curl -sS -H "$GET_DIGEST" $SERVER/v2/$team/$image/manifests/$version -I | \
+    grep 'Docker-Content-Digest:' | \
+    awk -F ': ' '{print $2}' | \
+    tr -d '\r'
+)
+
+if [ -z "$digest" ]; then
+    echo "Cannot match tag $version to digest" 2>&1
+    exit 1
+fi
+
+echo Found digest $digest
+
+curl -sS -X DELETE $SERVER/v2/$team/$image/manifests/$digest
+
+if [ $? -eq 0 ]; then
+    echo 'Delete finished successfully'
+else
+    echo 'There was an issue' 2>&1
+    exit 1
+fi
