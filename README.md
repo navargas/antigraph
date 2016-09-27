@@ -79,13 +79,16 @@ curl -O -J -H 'X-API-KEY: key' https://svl.cumulusrepo.com/assets/assetName/vers
 ```
 Or ansible:
 ```yml
-cumulus_repo:
-  asset: assetName
-  region: na
-  version: versionName
-  key: "{{ api_key }}"
-  dest: path/to/destination
+repo_download:
+     asset: {{ asset }}
+     version: {{ version }}
+     region: {{ region }}     # na, we, ea, cdsdev, or svl
+     key: {{ key }}
 ```
+**Note:** repo_download.py can be downloaded from [here](https://github.ibm.com/cds-sre-org/cumulus_ansible/blob/master/.modules/repo_download.py). This module requires `wget` to be installed
+on the target machine. Optional aguments `checksum` and `dest` can also be provided, where `checksum`
+matches the format "md5:347d3060b8f0366c0eb06df61c9b1f74" and `dest` is either a directory or filename.
+
 The old "assets" command line tool will also work for uploading/downloading files.
 ```bash
 assets fetch assetName:versionName
