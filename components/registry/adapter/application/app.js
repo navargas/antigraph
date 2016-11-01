@@ -174,6 +174,7 @@ app.get('/list/:teamname?', function(req, res) {
                 console.log('abc',imageVersions);
                 imageVersions = imageVersions.filter(
                     (i) => {return i.versions !== null});
+                console.log('def',imageVersions);
                 res.send({assets:imageVersions, error:error});
             });
         })
