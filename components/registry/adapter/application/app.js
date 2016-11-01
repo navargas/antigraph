@@ -171,6 +171,8 @@ app.get('/list/:teamname?', function(req, res) {
                 error = e;
             }
             getTagInfo(imageList, function(imageVersions) {
+                imageVersions = imageVersions.filter(
+                    (i) => {return i.versions !== null});
                 res.send({assets:imageVersions, error:error});
             });
         })
