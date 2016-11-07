@@ -281,6 +281,8 @@ app.post('/uploadkey', function(req, res) {
     }
     auth.getKeyDoc(key, function(err, doc) {
         if (err) return fail(res, 'Unable to find key');
+        if (doc.readonly)
+            return fail(res, 'This key is read only');
         req.session.email = doc.creator;
         req.session.key = key;
         res.cookie('apikey', key, { maxAge: 1000 * 60 * 60 * 24 });

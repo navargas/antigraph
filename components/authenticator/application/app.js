@@ -79,6 +79,7 @@ function acceptAccess(service, keydoc, asset, req, res) {
     var info = setInfoHeaders(keydoc, asset, res);
     info.access = 'ok';
     info.type = 'existing_asset';
+    info.key = keydoc;
     res.status(201).send(info);
 }
 
@@ -164,6 +165,7 @@ function authReq(req, res) {
 
 function uriAuth(req, res) {
     var uri = req.headers['x-original-uri'];
+    var method = req.headers['x-original-method'];
     if (!req.headers || !req.headers.authorization) {
         console.log('headers', req.headers);
         res.append('WWW-Authenticate', 'Basic');
@@ -173,7 +175,7 @@ function uriAuth(req, res) {
     var decode = new Buffer(auth.split(' ')[1], 'base64').toString('ascii');
     var username = decode.split(':')[0];
     var key = decode.split(':')[1];
-    console.log(username, key, uri);
+    console.log(username, key, uri, method);
     // if the user is doing a non-action, like catalog or ping, allow
     if (uri == '/v2/_catalog' || uri == '/v2/_catalog') {
         return res.status(201).end();
@@ -191,6 +193,9 @@ function uriAuth(req, res) {
     getKeyDoc(key, function(err, keydoc) {
         if (err) {
             console.error(err);
+            return rejectAccess(req, res);
+        }
+        if (keydoc.readonly && (method != 'HEAD' && method != 'GET')) {
             return rejectAccess(req, res);
         }
         if (!keydoc.valid) {

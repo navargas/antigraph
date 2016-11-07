@@ -81,6 +81,9 @@ function verify(req, res, next) {
               req.cookies.apikey;
     getKeyDoc(key, function(err, keydoc) {
         if (err) return res.status(500).send(err);
+        if (keydoc.readonly) {
+            return res.status(500).send({error:'Readonly key used'});
+        }
         req.keydoc = keydoc;
         next();
     });
