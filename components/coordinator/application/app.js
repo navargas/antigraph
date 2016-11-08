@@ -267,6 +267,30 @@ app.post('/login', function(req, res) {
         }
     });
 });
+app.post('/key/readonly', function(req, res) {
+    var key = req.headers['x-api-key'];
+    // Key will only be read from header, not cookies or session
+    if (!key) return res.status(501).send({
+        error:'Key must be set in X-API-KEY header to be made readonly'
+    });
+    auth.getKeyDoc(key, function(err, doc) {
+        if (err) {
+            var msg = 'Unable to find key';
+            return res.status(501).send({error:msg});
+        } else if (doc.readonly) {
+            var msg = 'This key is already readonly';
+            return res.status(501).send({error:msg});
+        }
+        doc.readonly = true;
+        db().insert(doc, doc._id, function(err, data) {
+            if (err) {
+                console.error('Issue setting key as read only!', err);
+                return res.status(501).send(err);
+            }
+            res.send({'status':'readonly set'});
+        });
+    });
+});
 app.post('/uploadkey', function(req, res) {
     var key = req.body.key;
     function fail(res, error) {
