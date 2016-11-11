@@ -79,7 +79,6 @@ function getRemoteAssets(target, key, callback) {
         headers: {'x-api-key': key, nofmt:'yes'}
     }
     request(req, function(err, res, body) {
-        console.log(target, body);
         if (err) return callback(err);
         var obj = undefined;
         try {
@@ -164,7 +163,6 @@ function createTeam(name, creator, callback) {
     var luc = fmt('type:"team" AND value:"%s"', name);
     var query = {q:luc, include_docs:true};
     db().search('design', 'typeValue', query, function(err, data) {
-        console.log(err, data);
         if (err)
             return callback(err);
         if (data.total_rows > 0)
@@ -183,6 +181,7 @@ function createTeam(name, creator, callback) {
         db().insert(teamDoc, function(err, value) {
             if (err)
                 return callback(err);
+            console.log('New team', teamDoc);
             db().insert(memberDoc, function(err, value) {
                 if (err)
                     return callback(err);
@@ -199,7 +198,6 @@ function formDigestData(all, serviceLegend) {
         var serviceIndex = serviceLegend[serviceIndex];
         var join = {};
         for (var key in all) {
-            console.log(key, serviceIndex);
             var obj = all[key][serviceIndex];
             if (!obj) {
                 offline.push([key, serviceIndex, 'timeout']);
@@ -258,7 +256,6 @@ app.post('/login', function(req, res) {
     var email = req.body.email;
     var password = req.body.password;
     auth.isValidUser(email, password, function(valid, errMsg) {
-        console.log(email, password, valid);
         if (valid) {
             req.session.email = email;
             res.redirect('/');
@@ -459,7 +456,6 @@ app.get('/manifest', auth.verify, function(req, res) {
                     var serviceLegend = services.map((o)=>{
                         return o.split('/')[1];
                     });
-                    console.log(results, serviceLegend);
                     var displayForm = formDigestData(results, serviceLegend);
                     res.send(displayForm);
                 }
@@ -483,9 +479,7 @@ app.get('/digest', auth.verify, function(req, res) {
     });
 });
 function translateService(display) {
-    console.log(display, 'in', SERVICES);
     for (var ix in SERVICES) {
-        console.log(ix, 'is', SERVICES[ix][1]);
         if (SERVICES[ix][1] == display) return SERVICES[ix][0];
     }
 }
@@ -578,7 +572,6 @@ app.get('/transfers', auth.verify, function(req, res) {
         query.selector.time["$gt"] = 0;
         delete query.selector["active"];
     }
-    console.log(query);
     db().find(query, function(err, data) {
         if (err) return res.status(501).send(err);
         // remove API key
@@ -642,7 +635,6 @@ setInterval(function() {
                     doc.updates.push(fmt('Done at %s', Date.now()));
                     doc.finished = true;
                 }
-                console.log('final', doc);
                 db().insert(doc, doc._id, function(err, data) {
                     if (err) console.error(err);
                 });
