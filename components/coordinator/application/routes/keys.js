@@ -5,6 +5,16 @@ var db = require('../lib/db');
 var auth = require('../lib/auth');
 var names = require('../lib/names');
 
+function translateServiceKeys(obj) {
+    // Translate container name to display name
+    var result = {};
+    for (let key of Object.keys(obj)) {
+        var newKey = names.translateService(key, true);
+        result[newKey] = obj[key];
+    }
+    return result;
+}
+
 // Return a list of all named keys
 router.get('/', auth.verify, function(req, res) {
     var query = {
@@ -140,10 +150,10 @@ router.get('/:keyname/whitelist', auth.verify, function(req, res) {
     };
     db().find(query, function(err, value) {
         if (err) return res.status(500).send(err);
-        if (rows.length < 1) return res.status(404).send({
+        if (value.docs.length < 1) return res.status(404).send({
             error:'Key not found'
         });
-        res.send(value.docs[0].whitelist);
+        res.send(translateServiceKeys(value.docs[0].whitelist));
     });
 });
 
@@ -158,17 +168,89 @@ router.get('/:keyname/whitelist/:service', auth.verify, function(req, res) {
         'fields': ['whitelist']
     };
     var service = names.translateService(req.params.service);
+    if (!service) return res.status(500).send({
+        error:req.params.service + ' not recognized'
+    });
     db().find(query, function(err, value) {
         if (err) return res.status(500).send(err);
-        if (rows.length < 1) return res.status(404).send({
+        if (value.docs.length < 1) return res.status(404).send({
             error:'Key not found'
         });
         res.send(value.docs[0].whitelist[service]);
     });
 });
 
-router.post('/:keyname/whitelist/:service/:asset', (req, res) => {
+router.post('/:keyname/whitelist/:service/:asset', auth.verify, (req, res) => {
+    var query = {
+        'selector': {
+            'type': { '$eq': 'key' },
+            'team': { '$eq':req.keydoc.team },
+            'name': { '$eq':req.params.keyname }
+        }
+    };
+    var service = names.translateService(req.params.service);
+    if (!service) return res.status(500).send({
+        error:req.params.service + ' not recognized'
+    });
+    var asset = req.params.asset;
+    db().find(query, function(err, value) {
+        if (err) return res.status(500).send(err);
+        if (value.docs.length < 1) return res.status(404).send({
+            error:'Key not found'
+        });
+        var doc = value.docs[0];
+        if (!doc.whitelist)
+            doc.whitelist = {};
+        if (!doc.whitelist[service])
+            doc.whitelist[service] = [];
+        if (doc.whitelist[service].indexOf(asset) >= 0)
+            return res.send({error:'This asset already exists in whitelist'});
+        doc.whitelist[service].push(asset);
+        db().insert(doc, doc._id, function(err, data) {
+            if (err) {
+                console.error('Issue updating key!', err);
+                return res.status(501).send(err);
+            }
+            res.send(translateServiceKeys(doc.whitelist));
+        });
+    });
+});
 
+router.delete('/:keyname/whitelist/:service/:asset', auth.verify, (req, res) => {
+    var query = {
+        'selector': {
+            'type': { '$eq': 'key' },
+            'team': { '$eq':req.keydoc.team },
+            'name': { '$eq':req.params.keyname }
+        }
+    };
+    var service = names.translateService(req.params.service);
+    if (!service) return res.status(500).send({
+        error:req.params.service + ' not recognized'
+    });
+    var asset = req.params.asset;
+    db().find(query, function(err, value) {
+        if (err) return res.status(500).send(err);
+        if (value.docs.length < 1) return res.status(404).send({
+            error:'Key not found'
+        });
+        var doc = value.docs[0];
+        if (!doc.whitelist || !doc.whitelist[service])
+            return res.status(500).send({error:'Asset not in whitelist'});
+        var index = doc.whitelist[service].indexOf(asset);
+        if (index < 0)
+            return res.status(404).send({error:'Asset not in whitelist'});
+        console.log('before', doc.whitelist[service]);
+        doc.whitelist[service].splice(index, 1);
+        console.log('after', doc.whitelist[service]);
+        db().insert(doc, doc._id, function(err, data) {
+            if (err) {
+                console.error('Issue updating key!', err);
+                return res.status(501).send(err);
+            }
+            res.send(translateServiceKeys(doc.whitelist));
+        });
+    });
 });
 
 module.exports = router;

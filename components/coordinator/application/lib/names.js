@@ -1,4 +1,4 @@
-
+var fmt = require('util').format;
 
 module.exports.getServices = function() {
     var services = [];
@@ -21,16 +21,20 @@ module.exports.getGeo = function() {
 /* valid matches include strings that share the same initial letters
    for example "Docker Registry" is matched by "Docker" and "docker"
    and "Binary Assets" is matched by "bin" and "binary" */
-module.exports.translateService = function(display) {
+module.exports.translateService = function(display, reverse) {
+    var services = module.exports.getServices();
     var nameMatch = RegExp(fmt('^%s.*', display), 'i');
-    for (var ix in SERVICES) {
-        var full = SERVICES[ix][1];
-        if (nameMatch.test(full)) return SERVICES[ix][0];
+    var source = reverse ? 0 : 1
+    var target = reverse ? 1 : 0
+    for (var ix in services) {
+        var full = services[ix][source];
+        if (nameMatch.test(full)) return services[ix][target];
     }
 }
 
 module.exports.translateGeo = function(display) {
-    for (var ix in GEO) {
-        if (GEO[ix][1] == display) return GEO[ix][0];
+    var geo = module.exports.getGeo();
+    for (var ix in geo) {
+        if (geo[ix][1] == display) return geo[ix][0];
     }
 }
