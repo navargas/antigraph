@@ -189,6 +189,15 @@ function fileInfoHeaders(req, res) {
             asset,
             version
         );
+        // Check if key contains whitelist
+        if (info.key.readonly && info.key.whitelist) {
+            var approved = info.key.whitelist.repo_adapter;
+            if (!approved || approved.indexOf(asset) < 0) {
+                return res.status(401).send({
+                    error: 'Asset not in whitelist'
+                });
+            }
+        }
         res.setHeader('X-AUTH-TEAM', group);
         res.setHeader('X-AUTH-ASSET', asset);
         res.setHeader('X-AUTH-VERSION', version);
