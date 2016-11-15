@@ -208,6 +208,12 @@ function uriAuth(req, res) {
         var team = match[1];
         var asset = match[2];
         var service = 'docker';
+        if (keydoc.readonly && keydoc.whitelist && asset) {
+            var approved = keydoc.whitelist.registry_adapter;
+            if (!approved || approved.indexOf(asset) < 0) {
+                return rejectAccess(req, res);
+            }
+        }
         if (keydoc.team != team) {
             console.error('Team mis-match', team, keydoc.team);
             return rejectAccess(req, res);
