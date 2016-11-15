@@ -8,9 +8,13 @@ var fmt = require('util').format;
 var request = require('request');
 var auth = require('./lib/auth');
 var db = require('./lib/db');
+var names = require('./lib/names');
 var app = express();
 var validName = /^[a-z0-9\_]{2,}$/;
 var t_hour = 1000 * 60 * 60;
+
+var SERVICES = names.getServices();
+var GEO = names.getGeo();
 
 var sessionOpts = {
     secret: process.env.sessionsecret || 'bc391664e96a4fc291d4866358b816af',
@@ -24,6 +28,7 @@ app.use(session(sessionOpts));
 app.use(require('cookie-parser')());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
+app.use('/keys', require('./routes/keys.js'));
 
 var PORT = process.env.PORT || 80;
 
@@ -94,8 +99,8 @@ function getAllAssets(services, team, callback) {
     var result = {};
     for (var index in services) {
         (function(service) {
-            var serviceHost = service.split('/')[0];
-            var serviceName = service.split('/')[1];
+            var serviceHost = service[0];
+            var serviceName = service[1];
             getAssets(serviceHost, team, function(err, assets) {
                 if (err)
                     result[serviceName] = {error:err};
@@ -228,30 +233,6 @@ function formDigestData(all, serviceLegend) {
     return {assets:allServices, legend:legend, offline:offline};;
 }
 
-var services = [];
-var SERVICES = [];
-if (process.env.SERVICES) {
-    services = process.env.SERVICES.split('+');
-    SERVICES = process.env.SERVICES.split('+');
-}
-for (var ix in SERVICES) {
-    SERVICES[ix] = SERVICES[ix].split('/');
-}
-
-var geo = [];
-if (process.env.GEO)
-    geo = process.env.GEO.split('+');
-for (var ix in geo) {
-    geo[ix] = geo[ix].split('/');
-}
-
-// If debug is enabled replace all targets w/ localhost
-if (process.env.DEBUG == 'yes') geo.map((o) => {
-    o[0] = 'localhost';
-    o[2] = undefined;
-});
-console.log('Using cluster', geo);
-
 app.post('/login', function(req, res) {
     var email = req.body.email;
     var password = req.body.password;
@@ -262,30 +243,6 @@ app.post('/login', function(req, res) {
         } else {
             res.redirect('/?error=' + (errMsg || ''));
         }
-    });
-});
-app.post('/key/readonly', function(req, res) {
-    var key = req.headers['x-api-key'];
-    // Key will only be read from header, not cookies or session
-    if (!key) return res.status(501).send({
-        error:'Key must be set in X-API-KEY header to be made readonly'
-    });
-    auth.getKeyDoc(key, function(err, doc) {
-        if (err) {
-            var msg = 'Unable to find key';
-            return res.status(501).send({error:msg});
-        } else if (doc.readonly) {
-            var msg = 'This key is already readonly';
-            return res.status(501).send({error:msg});
-        }
-        doc.readonly = true;
-        db().insert(doc, doc._id, function(err, data) {
-            if (err) {
-                console.error('Issue setting key as read only!', err);
-                return res.status(501).send(err);
-            }
-            res.send({'status':'readonly set'});
-        });
     });
 });
 app.post('/uploadkey', function(req, res) {
@@ -445,27 +402,27 @@ app.get('/teams', function(req, res) {
 });
 app.get('/manifest', auth.verify, function(req, res) {
     var results = {};
-    for (var ix in geo) {
+    for (var ix in GEO) {
         ((target)=> {
-            getRemoteAssets(geo[ix], req.keydoc.value, function(err, data) {
+            getRemoteAssets(GEO[ix], req.keydoc.value, function(err, data) {
                 if (err)
                     results[target[1]] = {};
                 else
                     results[target[1]] = data;
-                if (Object.keys(results).length == geo.length) {
-                    var serviceLegend = services.map((o)=>{
-                        return o.split('/')[1];
+                if (Object.keys(results).length == GEO.length) {
+                    var serviceLegend = SERVICES.map((o)=>{
+                        return o[1];
                     });
                     var displayForm = formDigestData(results, serviceLegend);
                     res.send(displayForm);
                 }
             })
-        })(geo[ix]);
+        })(GEO[ix]);
     }
 });
 app.get('/digest', auth.verify, function(req, res) {
     var nofmt = req.headers.nofmt;
-    getAllAssets(services, req.keydoc.team, function(data) {
+    getAllAssets(SERVICES, req.keydoc.team, function(data) {
         if (nofmt) return res.send(data);
         var services = Object.keys(data);
         var result = [];
@@ -478,16 +435,6 @@ app.get('/digest', auth.verify, function(req, res) {
         res.send(result);
     });
 });
-function translateService(display) {
-    for (var ix in SERVICES) {
-        if (SERVICES[ix][1] == display) return SERVICES[ix][0];
-    }
-}
-function translateGeo(display) {
-    for (var ix in geo) {
-        if (geo[ix][1] == display) return geo[ix][0];
-    }
-}
 app.delete('/transfers/:id', auth.verify, function(req, res) {
     var query = {
       "selector": {
@@ -646,12 +593,12 @@ setInterval(function() {
 app.post('/transfers', auth.verify, function(req, res) {
     var transferDoc = {
         type: 'transfer',
-        service: translateService(req.body.service),
+        service: names.translateService(req.body.service),
         asset: req.body.asset,
         time: Date.now(),
         version: req.body.version,
-        target: translateGeo(req.body.target),
-        source: translateGeo(req.body.source),
+        target: names.translateGeo(req.body.target),
+        source: names.translateGeo(req.body.source),
         delete: req.body.delete,
         active: true,
         started: false,
