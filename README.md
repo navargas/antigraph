@@ -155,6 +155,9 @@ always show the most recent data, but changes might not take effect immediately.
 **PUT /keys/:name:/**
 * Create a named key. By default the key would be readonly with no access to any assets
 
+**DELETE /keys/:name:/**
+* Delete a named key
+
 **GET /keys/:name:/**
  * Retrieve info about key with name "name"
  * example result:
