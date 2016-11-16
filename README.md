@@ -2,6 +2,14 @@
 
 Main node hosted at https://svl.cumulusrepo.com
 
+* [Mirrors](#current-mirrors)
+* [Create Key](#create-key)
+* [Using Docker Images](#docker)
+* [Using Files](#binary-assets)
+* [Delete Assets](#delete)
+* [Transfer Assets](#transfer)
+* [Named Keys](#named-keys)
+
 ## Current Mirrors
 
 You can upload files and docker images to any of the URLs listed below, but keep in mind that Cumulus Repo cannot yet transfer files *into* the IBM network. Fox example, if you upload a file initially to North America (na), it can only be transferred to Western Europe (we) or East Asia (ea), but not SVL.
@@ -119,6 +127,48 @@ curl -H 'X-API-KEY: key_goes_here' -H "Content-Type: application/json" -d \
       "target":"Western Europe"}' \
     https://svl.cumulusrepo.com/transfers
 ```
+
+# Named Keys
+
+Named keys can be used to give partial, readonly access to a chosen set of assets.
+
+**Note:** `:service:` denotes whether you are whitelisting assets for Docker Registry
+or Binary Repo. This parameter is case insensitive and need not match trailing
+characters, so `/keys/MyNewKey/whitelist/docker/` is the same as
+`/keys/MyNewKey/whitelist/Docker%20Registry/` and likewise
+`/keys/MyNewKey/whitelist/binary/` can be used instead of
+`/keys/MyNewKey/whitelist/Binary%20Repo/`.
+
+**GET /keys/**
+ * Return a list of all named keys that belong to the team
+ * example result:
+```json
+[
+	{"name":"SpecialKey1", "description":"This is a key"},
+	{"name":"SpecialKey2", "description":"This is another key"}
+]
+```
+
+**PUT /keys/:name:/**
+* Create a named key. By default the key would be readonly with no access to any assets
+
+**GET /keys/:name:/**
+ * Retrieve info about key with name "name"
+ * example result:
+```json
+{
+	"name":"SpecialKey1",
+	"description":"This key was created as an example",
+	"value":"secretabcdef",
+	"whitelist":{"Docker Repo":["asset1", "asset2"], "Binary Assets":["asset1","asset2"]}
+}
+```
+
+**POST /keys/:name:/whitelist/:service:/:assetName:/**
+* Add an asset to the key's whitelist
+
+**DELETE /keys/:name:/whitelist/:service:/:assetName:/**
+* Remove an asset from the key's whitelist
 
 
 # Development
