@@ -139,6 +139,9 @@ characters, so `/keys/MyNewKey/whitelist/docker/` is the same as
 `/keys/MyNewKey/whitelist/binary/` can be used instead of
 `/keys/MyNewKey/whitelist/Binary%20Repo/`.
 
+**Note:** Key metadata is cached for up to 10 minutes. The /keys/ interface will
+always show the most recent data, but changes might not take effect immediately.
+
 **GET /keys/**
  * Return a list of all named keys that belong to the team
  * example result:
