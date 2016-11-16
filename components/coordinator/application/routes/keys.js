@@ -216,6 +216,46 @@ router.post('/:keyname/whitelist/:service/:asset', auth.verify, (req, res) => {
     });
 });
 
+router.post('/:keyname/description', auth.verify, (req, res) => {
+    var query = {
+        'selector': {
+            'type': { '$eq': 'key' },
+            'team': { '$eq':req.keydoc.team },
+            'name': { '$eq':req.params.keyname }
+        }
+    };
+    var desc;
+    var contentType = req.headers['content-type'];
+    // If text/plain, read entire body
+    // else, read description property
+    if (contentType && contentType.toLowerCase() == 'text/plain')
+        desc = req.body;
+    else if (req.body && req.body.description)
+        desc = req.body.description;
+    // if undefined, return error
+    if (!desc || typeof(desc) != 'string') return res.status(500).send({
+        error: 'Description not set. Check Content-Type header'
+    });
+    if (desc.length > 500) return res.status(500).send({
+        error: 'Description too long'
+    });
+    db().find(query, function(err, value) {
+        if (err) return res.status(500).send(err);
+        if (value.docs.length < 1) return res.status(404).send({
+            error:'Key not found'
+        });
+        var doc = value.docs[0];
+        doc.description = desc;
+        db().insert(doc, doc._id, function(err, data) {
+            if (err) {
+                console.error('Issue updating key!', err);
+                return res.status(501).send(err);
+            }
+            res.send({description: desc});
+        });
+    });
+});
+
 router.delete('/:keyname/whitelist/:service/:asset', auth.verify, (req, res) => {
     var query = {
         'selector': {
