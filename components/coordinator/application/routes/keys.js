@@ -8,7 +8,7 @@ var names = require('../lib/names');
 function translateServiceKeys(obj) {
     // Translate container name to display name
     var result = {};
-    for (let key of Object.keys(obj)) {
+    for (var key of Object.keys(obj)) {
         var newKey = names.translateService(key, true);
         result[newKey] = obj[key];
     }
