@@ -170,6 +170,14 @@ always show the most recent data, but changes might not take effect immediately.
 }
 ```
 
+**POST /keys/:name:/description**
+* Set desciption of the named key. If `Content-Type: text/plain` the body of the request will be set as the desciption. Otherwise if  `Content-Type: application/json`, the body should be formatted like so: `{"description":"This is the description"}`.
+
+Example using curl:
+```bash
+curl -H 'Content-Type: text/plain' -d 'This is the description' -X POST -H 'X-API-KEY: ...' https://.../keys/KeyName/description
+```
+
 **POST /keys/:name:/whitelist/:service:/:assetName:/**
 * Add an asset to the key's whitelist
 
