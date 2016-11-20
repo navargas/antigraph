@@ -119,7 +119,7 @@ function uploadFileTarget(req, res) {
             info = undefined;
         }
         if (!info || !info.team) return res.status(statusCode).send(data);
-        if (info.key.readonly) {
+        if (info.key && info.key.readonly) {
             return res.status(403).send({error:'Readonly key'});
         }
         // group from function scope
