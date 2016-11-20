@@ -70,6 +70,7 @@ function acceptNewAsset(service, keydoc, asset, req, res) {
         var info = setInfoHeaders(keydoc, asset, res);
         info.access = 'ok';
         info.type = 'new_asset';
+        info.key = keydoc;
         res.status(201).send(info);
     })
 }
