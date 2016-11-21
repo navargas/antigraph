@@ -392,7 +392,7 @@ app.get('/members', auth.verify, function(req, res) {
     });
 });
 app.get('/teams', function(req, res) {
-    var query = {q:'type:"team"', include_docs:true};
+    var query = {q:'type:"team"', include_docs:true, limit:100};
     db().search('design', 'type', query, function(err, value) {
         if (err) return res.status(501).send({error:err});
         var result = value.rows.map((obj) => {
