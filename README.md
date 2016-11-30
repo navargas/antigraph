@@ -153,7 +153,9 @@ always show the most recent data, but changes might not take effect immediately.
 ```
 
 **PUT /keys/:name:/**
-* Create a named key. By default the key would be readonly with no access to any assets
+* Create a readonly named key. By default the key will have read access to all assets
+* Once a item is added to the whitelist, all items except those on the whitelist
+  will be blocked
 
 **DELETE /keys/:name:/**
 * Delete a named key
