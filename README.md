@@ -10,6 +10,10 @@ Main node hosted at https://svl.cumulusrepo.com
 * [Transfer Assets](#transfer)
 * [Named Keys](#named-keys)
 
+## Summary Diagram
+
+![FlowChart](http://i.imgur.com/1a73olp.png)
+
 ## Current Mirrors
 
 You can upload files and docker images to any of the URLs listed below, but keep in mind that Cumulus Repo cannot yet transfer files *into* the IBM network. Fox example, if you upload a file initially to North America (na), it can only be transferred to Western Europe (we) or East Asia (ea), but not SVL.
