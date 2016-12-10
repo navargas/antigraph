@@ -1,3 +1,5 @@
+var md5 = require('md5-file');
+var multer = require('multer');
 var uuid = require('uuid');
 var path = require('path');
 var mkdirp = require('mkdirp');
@@ -85,6 +87,9 @@ module.exports.createNew = function(req, res) {
         if (!info || !info.key) {
             return res.status(statusCode).send(data);
         }
+        if (info.key.readonly) {
+            return res.status(403).send({error:'Readonly key'});
+        }
         createPartialDirectory(info.key, function(uniqueId) {
             if (req.headers.accept.toLowerCase() == 'text/plain')
                 return res.status(200).send(uniqueId);
@@ -95,4 +100,76 @@ module.exports.createNew = function(req, res) {
 }
 
 module.exports.uploadPartial = function(req, res) {
+    var txId = req.params.txId;
+    var sequence = parseInt(req.params.sequence);
+    if (sequence === NaN || sequence < 0) {
+        return module.exports.fail(res, 'Seqence number invalid');
+    }
+    // x-api-key header must be set
+    var key = req.headers['x-api-key'];
+    if (!key) return module.exports.fail(res, 'X-API-KEY not set', 401);
+    if (!txId) return module.exports.fail(res, 'txId field empty');
+    if (!sequence) return module.exports.fail(res, 'Sequence field empty');
+    // attempting to get a path with also create the path
+    // store the partial in /var/asset-data/.partials/email-txId/
+    var email;
+    var storage = multer.diskStorage({
+        destination: function (req, file, callback) {
+            var targetPath = path.join(
+                conf.storageDir,
+                '.partials',
+                email + '-' + txId
+            );
+            callback(null, targetPath);
+        },
+        filename: function (req, file, callback) {
+            callback(null, sequence.toString());
+        }
+    });
+    var params = {key: key};
+    // Fetch the team info from the authenticator
+    // Any non-201 status suggests that the user does not have access
+    // to the asset.
+    module.exports.httpPost('authenticator', '/simple', 80, {key: key},
+            function(statusCode, data) {
+        if (statusCode !== 201) return res.status(statusCode).send(data);
+        var info;
+        // The authenticator returns some necessary information in a JSON
+        // format. If the response is malformed or missing data, the upload
+        // will be blocked.
+        try {
+            info = JSON.parse(data);
+        } catch (e) {
+            info = undefined;
+        }
+        if (!info || !info.key) {
+            return res.status(statusCode).send(data);
+        }
+        if (info.key.readonly) {
+            return res.status(403).send({error:'Readonly key'});
+        }
+        email = info.key.creator;
+        // the actual upload
+        multer({storage}).single('upload')(req, res, function(err) {
+            if (err) {
+                var errorMsg = {error:'There was an issue uploading the file'};
+                return res.status(500).send(errorMsg);
+            }
+            var fullPath = path.join(req.file.destination, req.file.filename);
+            md5(fullPath, (md5err, md5sum)=>{
+                if (md5err) {
+                    console.error(md5err);
+                }
+                if (req.headers.accept.toLowerCase() == 'text/plain')
+                    res.send(md5sum);
+                else res.send({
+                    error: md5err || undefined,
+                    sequence: req.file.filename,
+                    txId: txId,
+                    md5: md5sum,
+                    user: email
+                });
+            });
+        });
+    });
 }
