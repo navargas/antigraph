@@ -136,6 +136,21 @@ app.get('/', function (req, res) {
     res.send({version:'v1.0.0', service:'authenticator'});
 });
 
+function simpleAuth(req, res) {
+    var key = req.body.key || req.query.key || req.headers['x-api-key'];
+    console.log('key', key);
+    getKeyDoc(key, function(err, keydoc) {
+        if (err) {
+            console.error(err);
+            return rejectAccess(req, res);
+        }
+        if (!keydoc.valid) {
+            return rejectAccess(req, res);
+        }
+        return res.status(201).send({access:'ok', key:keydoc});
+    });
+}
+
 function authReq(req, res) {
     var db = cloudant.use(DBNAME);
     console.log(req.body);
@@ -229,6 +244,9 @@ app.get('/reject/:service/:asset/', rejectAccess);
 
 app.post('/auth/:service/:asset/', authReq);
 app.get('/auth/:service/:asset/', authReq);
+
+app.get('/simple', simpleAuth);
+app.post('/simple', simpleAuth);
 
 app.post('/uriauth', uriAuth);
 app.get('/uriauth', uriAuth);

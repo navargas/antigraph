@@ -4,12 +4,11 @@ var fs = require('fs');
 var exec = require('child_process').exec;
 var path = require('path');
 var mkdirp = require('mkdirp');
-var querystring = require('querystring');
 var multer = require('multer');
 var bodyParser = require('body-parser');
 var fmt = require('util').format;
-var http = require('http');
 var db = require('./lib/db');
+var partials = require('./lib/partials');
 var conf = {
     storageDir: '/var/asset-data/'
 }
@@ -31,52 +30,15 @@ function filterSystemFiles(array) {
     });
 }
 
-/* httpPost used for communicating with authenticator */
-function httpPost(hostname, path, port, params, callback) {
-    if (!params) params = {};
-    var postData = querystring.stringify(params);
-    var httpReq = {
-        hostname: hostname,
-        port: port,
-        method: 'POST',
-        path: path,
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': postData.length
-        }
-    };
-    // Send http post to hostname:port
-    var buffer = '';
-    var req = http.request(httpReq, function(res) {
-        res.setEncoding('utf8');
-        res.on('data', function(chunk) {
-            buffer += chunk;
-        });
-        res.on('end', function() {
-            console.log('Status:', res.statusCode);
-            if (callback) return callback(res.statusCode, buffer);
-        })
-    });
-    req.write(postData);
-    req.end();
-}
-
-/* Generic fail response */
-function fail(res, message, statusCode) {
-    var sc = statusCode || 501;
-    res.status(sc).send({
-        error: message
-    });
-}
 
 function uploadFileTarget(req, res) {
     var asset = req.params.assetName;
     var version = req.params.versionName;
     // x-api-key header must be set
     var key = req.headers['x-api-key'];
-    if (!asset) return fail(res, 'Asset name field empty');
-    if (!key) return fail(res, 'X-API-KEY not set', 401);
-    if (!version) return fail(res, 'Version name field empty');
+    if (!asset) return partails.fail(res, 'Asset name field empty');
+    if (!key) return partails.fail(res, 'X-API-KEY not set', 401);
+    if (!version) return partails.fail(res, 'Version name field empty');
     var group = 'group_dne';
     // attempting to get a path with also create the path
     function getPath(file) {
@@ -107,7 +69,7 @@ function uploadFileTarget(req, res) {
     // Fetch the team info from the authenticator
     // Any non-201 status suggests that the user does not have access
     // to the asset.
-    httpPost('authenticator', url, 80, params, function(statusCode, data) {
+    partials.httpPost('authenticator', url, 80, params, function(statusCode, data) {
         if (statusCode !== 201) return res.status(statusCode).send(data);
         var info;
         // The authenticator returns some necessary information in a JSON
@@ -164,14 +126,14 @@ function fileInfoHeaders(req, res) {
     // x-api-key header must be set
     var key = req.headers['x-api-key'];
     var fileRequestHeader = req.headers['x-file-request'];
-    if (!asset) return fail(res, 'Asset name field empty');
-    if (!key) return fail(res, 'X-API-KEY not set', 401);
-    if (!version) return fail(res, 'Version name field empty');
+    if (!asset) return partails.fail(res, 'Asset name field empty');
+    if (!key) return partails.fail(res, 'X-API-KEY not set', 401);
+    if (!version) return partails.fail(res, 'Version name field empty');
     var group = 'group_dne';
     var params = {key: key};
     var url = '/auth/repo/' + asset;
     console.log('New get,', asset, version, key);
-    httpPost('authenticator', url, 80, params, function(statusCode, data) {
+    partials.httpPost('authenticator', url, 80, params, function(statusCode, data) {
         if (statusCode !== 201) return res.status(statusCode).send(data);
         var info;
         try {
@@ -371,7 +333,7 @@ app.post('/transfer', function(req, res) {
 app.get('/auth', function(req, res) {
     var params = {key: 'abc'};
     var url = '/auth/repo/asset01';
-    httpPost('authenticator', url, 80, params, function(status, data) {
+    partials.httpPost('authenticator', url, 80, params, function(status, data) {
         res.send(data);
     });
 });
@@ -385,6 +347,10 @@ app.get('/reject', function(req, res) {
 /* actual targets */
 app.post('/assets/:assetName/:versionName', uploadFileTarget);
 app.get('/assets/:assetName/:versionName', fileInfoHeaders);
+
+/* partials */
+app.post('/assets/partial', partials.createNew);
+app.post('/assets/partial/:txId/:sequence', partials.uploadPartial);
 
 app.get('/list/:teamname?', listImages);
 
