@@ -350,6 +350,8 @@ app.get('/assets/:assetName/:versionName', fileInfoHeaders);
 
 /* partials */
 app.post('/assets/partial', partials.createNew);
+app.post('/assets/partial/:txId/next', partials.next);
+app.post('/assets/partial/:txId/collate', partials.collate);
 app.post('/assets/partial/:txId/:sequence', partials.uploadPartial);
 
 app.get('/list/:teamname?', listImages);

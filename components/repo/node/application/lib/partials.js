@@ -1,3 +1,4 @@
+var fs = require('fs');
 var md5 = require('md5-file');
 var multer = require('multer');
 var uuid = require('uuid');
@@ -8,6 +9,19 @@ var querystring = require('querystring');
 
 var conf = {
     storageDir: '/var/asset-data/'
+}
+
+function getFirstMissing(directory, callback) {
+    fs.readdir(directory, (err, items)=>{
+        if (err) {
+            return callback(err);
+        }
+        var firstMissing = 0;
+        // find first missing index
+        while (items.indexOf(firstMissing.toString()) >= 0)
+            firstMissing++;
+        callback(undefined, firstMissing);
+    });
 }
 
 /* httpPost used for communicating with authenticator */
@@ -99,6 +113,140 @@ module.exports.createNew = function(req, res) {
     });
 }
 
+module.exports.collate = function(req, res) {
+    /* Join file partials together into one asset*/
+    var key = req.headers['x-api-key'];
+    if (!key)
+        return module.exports.fail(res, 'X-API-KEY not set', 401);
+    var finalIndex = req.headers['x-final-index'];
+    if (!finalIndex)
+        return module.exports.fail(res, 'X-FINAL-INDEX not set', 401);
+    var assetName = req.headers['x-asset-name'];
+    if (!assetName)
+        return module.exports.fail(res, 'X-ASSET-NAME not set', 401);
+    var versionName = req.headers['x-version-name'];
+    if (!versionName)
+        return module.exports.fail(res, 'X-ASSET-VERSION not set', 401);
+    var filename = req.headers['x-filename'];
+    if (!filename)
+        return module.exports.fail(res, 'X-FILENAME not set', 401);
+    module.exports.httpPost('authenticator', '/simple', 80, {key: key},
+            function(statusCode, data) {
+        if (statusCode !== 201) return res.status(statusCode).send(data);
+        var info;
+        try {
+            info = JSON.parse(data);
+        } catch (e) {
+            info = undefined;
+        }
+        if (info.key.readonly) {
+            return res.status(403).send({error:'Readonly key'});
+        }
+        var team = info.key.team;
+        var email = info.key.creator;
+        var txId = req.params.txId;
+        var partialPath = path.join(
+            conf.storageDir,
+            '.partials',
+            email + '-' + txId
+        );
+        var assetDirectory = path.join(
+            conf.storageDir,
+            team,
+            assetName,
+            versionName
+        );
+        var assetUpload = path.join(assetDirectory, '__activeUpload');
+        var assetDestination = path.join(assetDirectory, filename);
+        function appendSegments(index, last, callback) {
+            var fileSegment = path.join(partialPath, index.toString());
+            fs.readFile(fileSegment, function (err, data) {
+                fs.appendFile(assetUpload, data, (err) => {
+                    if (err) {
+                        callback(err);
+                    } else if (index < last) {
+                        appendSegments(index+1, last, callback);
+                    } else {
+                        callback();
+                    }
+                });
+            });
+        }
+        getFirstMissing(partialPath, (err, firstMissing) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).send(err);
+            }
+            if ((firstMissing - 1) != parseInt(finalIndex)) {
+                var error = 'Missing segment ' + firstMissing;
+                return module.exports.fail(res, error, 401);
+            }
+            mkdirp(assetDirectory, (err) => {
+                if (err) return res.status(500).send(err);
+                appendSegments(0, firstMissing-1, (err) => {
+                    if (err) return res.status(500).send(err);
+                    fs.rename(assetUpload, assetDestination, (err) => {
+                        if (err) return res.status(500).send(err);
+                        md5(assetDestination, (err, sum) => {
+                            if (err) return res.status(500).send(err);
+                            return res.send({
+                                filename: filename,
+                                asset: assetName,
+                                md5: sum,
+                                version: versionName
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
+}
+
+module.exports.next = function(req, res) {
+    /* Return the integer of the first missing sequence
+    For example, if the entire file is made up of 30 parts, and this
+    target returns 31, the file has been completely uploaded.
+
+    If 'Accept: text/plain' is set the result will be a single string
+    of the next item in the sequence, otherwise the return format
+    will be {"next": <integer>} */
+    var key = req.headers['x-api-key'];
+    module.exports.httpPost('authenticator', '/simple', 80, {key: key},
+            function(statusCode, data) {
+        if (statusCode !== 201) return res.status(statusCode).send(data);
+        var info;
+        // The authenticator returns some necessary information in a JSON
+        // format. If the response is malformed or missing data, the upload
+        // will be blocked.
+        try {
+            info = JSON.parse(data);
+        } catch (e) {
+            info = undefined;
+        }
+        if (info.key.readonly) {
+            return res.status(403).send({error:'Readonly key'});
+        }
+        var email = info.key.creator;
+        var txId = req.params.txId;
+        var targetPath = path.join(
+            conf.storageDir,
+            '.partials',
+            email + '-' + txId
+        );
+        getFirstMissing(targetPath, (err, firstMissing) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).send(err);
+            }
+            if (req.headers.accept.toLowerCase() == 'text/plain')
+                res.send(firstMissing.toString());
+            else
+                res.send({next: firstMissing});
+        });
+    });
+}
+
 module.exports.uploadPartial = function(req, res) {
     var txId = req.params.txId;
     var sequence = parseInt(req.params.sequence);
@@ -109,7 +257,6 @@ module.exports.uploadPartial = function(req, res) {
     var key = req.headers['x-api-key'];
     if (!key) return module.exports.fail(res, 'X-API-KEY not set', 401);
     if (!txId) return module.exports.fail(res, 'txId field empty');
-    if (!sequence) return module.exports.fail(res, 'Sequence field empty');
     // attempting to get a path with also create the path
     // store the partial in /var/asset-data/.partials/email-txId/
     var email;
@@ -126,7 +273,6 @@ module.exports.uploadPartial = function(req, res) {
             callback(null, sequence.toString());
         }
     });
-    var params = {key: key};
     // Fetch the team info from the authenticator
     // Any non-201 status suggests that the user does not have access
     // to the asset.
