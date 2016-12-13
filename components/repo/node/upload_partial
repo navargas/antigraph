@@ -103,7 +103,7 @@ while [ $failures -lt $MAX_FAIL ]; do
     rm -f $tmp_file
     dd_record=$(dd skip=$next if=$FILE of=$tmp_file count=1 bs=$FRAME_SIZE 2>&1)
     bytes=$(echo $dd_record \
-            | grep -Eo '[0-9]+ bytes transferred' \
+            | grep -Eo '[0-9]+ bytes' \
             | awk '{print $1}')
     expect=$(md5sum $tmp_file | awk '{print $1}')
     if [ -z "$expect" ]; then
