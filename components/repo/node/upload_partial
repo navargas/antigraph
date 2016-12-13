@@ -60,13 +60,14 @@ if [ $auth_req -eq 0 ]; then
 fi
 
 if [ -z "$TXID" ]; then
-    TXID=$(curl -X POST $headers $SERVER/assets/partial/)
+    TXID=$(curl -X POST $headers $SERVER/assets/partial/ || echo invalid)
     echo New Partial Id $TXID
 fi
 
 if [[ ! "$TXID" =~ $VALID_TX ]]; then
     echo "Invalid TxId $TXID"
-    exit 1
+    curl $auth -s -F "upload=@$FILE" $SERVER/assets/$NAME/$VERSION/
+    exit $?
 fi
 
 tmp_file=/tmp/$TXID
