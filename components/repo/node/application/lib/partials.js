@@ -1,4 +1,4 @@
-var fs = require('fs');
+var fs = require('fs-extra');
 var md5 = require('md5-file');
 var multer = require('multer');
 var uuid = require('uuid');
@@ -187,9 +187,15 @@ module.exports.collate = function(req, res) {
                     if (err) return res.status(500).send(err);
                     fs.rename(assetUpload, assetDestination, (err) => {
                         if (err) return res.status(500).send(err);
+                        fs.remove(partialPath, (err) => {
+                            if (err) console.error(err);
+                        });
                         md5(assetDestination, (err, sum) => {
                             if (err) return res.status(500).send(err);
-                            return res.send({
+                            var accept = req.headers.accept.toLowerCase();
+                            if (accept == 'text/plain')
+                                return res.send(sum);
+                            else return res.send({
                                 filename: filename,
                                 asset: assetName,
                                 md5: sum,
@@ -255,6 +261,7 @@ module.exports.uploadPartial = function(req, res) {
     }
     // x-api-key header must be set
     var key = req.headers['x-api-key'];
+    var correctSum = req.headers['x-expect-sum'];
     if (!key) return module.exports.fail(res, 'X-API-KEY not set', 401);
     if (!txId) return module.exports.fail(res, 'txId field empty');
     // attempting to get a path with also create the path
@@ -306,14 +313,31 @@ module.exports.uploadPartial = function(req, res) {
                 if (md5err) {
                     console.error(md5err);
                 }
-                if (req.headers.accept.toLowerCase() == 'text/plain')
-                    res.send(md5sum);
-                else res.send({
-                    error: md5err || undefined,
-                    sequence: req.file.filename,
-                    txId: txId,
-                    md5: md5sum,
-                    user: email
+                if (correctSum === undefined || md5sum == correctSum) {
+                    if (req.headers.accept.toLowerCase() == 'text/plain')
+                        res.send(md5sum);
+                    else res.send({
+                        error: md5err || undefined,
+                        sequence: req.file.filename,
+                        txId: txId,
+                        md5: md5sum,
+                        user: email
+                    });
+                } else fs.unlink(fullPath, (err) => {
+                    // X-EXPECT-SUM was defined and did not match
+                    if (err) {
+                        console.error(err);
+                        return res.send({error:err});
+                    }
+                    if (req.headers.accept.toLowerCase() == 'text/plain')
+                        res.send(md5sum);
+                    else res.send({
+                        sequence: req.file.filename,
+                        txId: txId,
+                        md5: md5sum,
+                        failed: true,
+                        user: email
+                    });
                 });
             });
         });
