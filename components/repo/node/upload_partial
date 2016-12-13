@@ -1,0 +1,120 @@
+#!/bin/bash
+
+set -e
+
+# Frame size is 10MiB by default
+FRAME_SIZE=$(( 10*(1024**2) ))
+
+VALID_TX=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
+MAX_FAIL=20
+
+
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
+    echo Missing argument. Correct format:
+    echo -n "upload_partial [-k key] [-i transactionId] [-f frameSize] "
+    echo "url file assetName versionName"
+    exit 1
+fi
+
+OPTIND=1
+while getopts "vk:i:f:" opt; do
+    case "$opt" in
+    i)  TXID=$OPTARG
+        ;;
+    k)  KEY=$OPTARG
+        ;;
+    f)  FRAME_SIZE=$OPTARG
+        ;;
+    v)  set -x
+        ;;
+    \?) echo Invalid flag $OPTARG
+        ;;
+    esac
+done
+
+shift "$((OPTIND - 1))"
+URL=$1
+FILE=$2
+NAME=$3
+VERSION=$4
+
+if [ -z "$KEY" ]; then
+    read -p "Enter key: " KEY
+fi
+
+auth='-H X-API-KEY:'$KEY''
+accept='-H Accept:text/plain'
+headers="-s $auth $accept"
+URLENCODED='-H Content-Type:application/x-www-form-urlencoded'
+SERVER=https://$URL
+
+# Check connectivity
+curl $SERVER &>/dev/null || (echo Invalid or unreachable server $SERVER; exit 1)
+
+# Check key
+auth_req=$(curl $URLENCODED -d "key=$KEY" $SERVER/uploadkey -v 2>&1 | grep set-cookie | wc -l)
+if [ $auth_req -eq 0 ]; then
+    echo Invalid key
+    exit 1
+fi
+
+if [ -z "$TXID" ]; then
+    TXID=$(curl -X POST $headers $SERVER/assets/partial/)
+    echo New Partial Id $TXID
+fi
+
+if [[ ! "$TXID" =~ $VALID_TX ]]; then
+    echo "Invalid TxId $TXID"
+    exit 1
+fi
+
+tmp_file=/tmp/$TXID
+
+file_size=$(stat --printf="%s" $FILE 2>/dev/null || stat -f%z $FILE)
+
+last_segment=-1
+failures=0
+total_written=0
+
+while [ $failures -lt $MAX_FAIL ]; do
+    next=$(curl -X POST $headers $SERVER/assets/partial/$TXID/next)
+
+    if [ $(( next * FRAME_SIZE )) -ge $file_size ]; then
+        rm -f $tmp_file
+        echo Done uploading
+        file_meta="-H X-FINAL-INDEX:$((next-1)) -H X-ASSET-NAME:$NAME"
+        file_meta="$file_meta -H X-VERSION-NAME:$VERSION -H X-FILENAME:$FILE"
+        correctSum=$(md5sum $FILE | awk '{print $1}')
+        md5=$(curl -X POST $file_meta $headers $SERVER/assets/partial/$TXID/collate)
+        if [[ "$md5" != "$correctSum" ]]; then
+            echo Partial join failure, expected $correctSum, got $md5
+            exit 2
+        fi
+        echo Remote sum $md5
+        echo Resolved $failures segment failures
+        exit 0
+    fi
+
+    # Increment failures if last attempted upload matches next needed upload
+    [ $next -eq $last_segment ] && (( failures++ ))
+    last_segment=$next
+    echo Next file segment $next
+
+    rm -f $tmp_file
+    dd_record=$(dd skip=$next if=$FILE of=$tmp_file count=1 bs=$FRAME_SIZE 2>&1)
+    bytes=$(echo $dd_record \
+            | grep -Eo '[0-9]+ bytes transferred' \
+            | awk '{print $1}')
+    expect=$(md5sum $tmp_file | awk '{print $1}')
+    if [ -z "$expect" ]; then
+        echo Error: Could not find md5sum of $tmp_file
+        exit 1
+    fi
+    curl -s -H "X-EXPECT-SUM: $expect" $headers -F "upload=@$tmp_file" \
+        $SERVER/assets/partial/$TXID/$next >/dev/null || echo $next upload failed
+    (( total_written += bytes ))
+    echo $total_written/$file_size bytes written
+done
+
+echo Maximum failures reached
+exit 1
