@@ -35,6 +35,7 @@ done
 shift "$((OPTIND - 1))"
 URL=$1
 FILE=$2
+FILENAME=$(basename $FILE)
 NAME=$3
 VERSION=$4
 
@@ -83,7 +84,7 @@ while [ $failures -lt $MAX_FAIL ]; do
         rm -f $tmp_file
         echo Done uploading
         file_meta="-H X-FINAL-INDEX:$((next-1)) -H X-ASSET-NAME:$NAME"
-        file_meta="$file_meta -H X-VERSION-NAME:$VERSION -H X-FILENAME:$FILE"
+        file_meta="$file_meta -H X-VERSION-NAME:$VERSION -H X-FILENAME:$FILENAME"
         correctSum=$(md5sum $FILE | awk '{print $1}')
         md5=$(curl -X POST $file_meta $headers $SERVER/assets/partial/$TXID/collate)
         if [[ "$md5" != "$correctSum" ]]; then
@@ -104,6 +105,7 @@ while [ $failures -lt $MAX_FAIL ]; do
     dd_record=$(dd skip=$next if=$FILE of=$tmp_file count=1 bs=$FRAME_SIZE 2>&1)
     bytes=$(echo $dd_record \
             | grep -Eo '[0-9]+ bytes' \
+            | head -n 1 \
             | awk '{print $1}')
     expect=$(md5sum $tmp_file | awk '{print $1}')
     if [ -z "$expect" ]; then
