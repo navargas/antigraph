@@ -311,7 +311,7 @@ app.post('/transfer', function(req, res) {
         var files = fs.readdirSync(fpath);
         var filename = filterSystemFiles(files)[0];
         var fullpath = path.join(fpath, filename);
-        setps = [
+        steps = [
             fmt('upload_partial -k %s %s %s %s %s',
                 key, target, fullpath, asset, version)
         ];
