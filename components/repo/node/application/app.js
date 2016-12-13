@@ -244,6 +244,10 @@ function listImages(req, res) {
 }
 
 function spawn(cmd, txId, callback) {
+    if (cmd === undefined) {
+        console.error('Undefined command from', txId);
+        return callback({sc:266});
+    }
     exec(cmd, (error, stdout, stderr) => {
         if (error) {
             console.error(error);
@@ -276,7 +280,7 @@ function waterfall_exec(statements, txId, callback) {
 
         next++;
 
-        if (next == statements.length) {
+        if (next >= statements.length) {
             callback(report);
         } else {
             spawn(statements[next], txId, caller);
