@@ -97,7 +97,7 @@ repo_download:
      region: {{ region }}     # na, we, ea, cdsdev, or svl
      key: {{ key }}
 ```
-**Note:** repo_download.py can be downloaded from [here](https://github.ibm.com/cds-sre-org/cumulus_ansible/blob/master/.modules/repo_download.py). This module requires `wget` to be installed
+**Note:** repo_download.py can be downloaded from [here](.util/ansible/repo_download.py). This module requires `wget` to be installed
 on the target machine. Optional aguments `checksum` and `dest` can also be provided, where `checksum`
 matches the format "md5:347d3060b8f0366c0eb06df61c9b1f74" and `dest` is either a directory or filename.
 
