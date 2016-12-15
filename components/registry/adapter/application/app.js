@@ -97,6 +97,25 @@ function waterfall_exec(statements, txId, callback) {
     spawn(statements[next], txId, caller);
 }
 
+app.post('/meta', function(req, res) {
+    var image = req.body.asset;
+    var tag = req.body.version;
+    var team = req.body.team;
+    var base = '/registry-data/docker/registry/v2/repositories/';
+    var fullPath = path.join(
+        base, team, image, '_manifests', 'tags', tag, 'current', 'link'
+    );
+    fs.readFile(fullPath, 'utf8', function(err, data) {
+        if (err && err.code == 'ENOENT') return res.status(404).send({
+            error: fmt('Tag %s:%s not found', image, tag)
+        });
+        if (err) {
+            return res.status(500).send(err);
+        }
+        res.send({sum:data});
+    });
+});
+
 app.post('/transfer', function(req, res) {
     var valid = /[a-zA-Z0-9\_\-\.]+/;
     var doc = req.body;

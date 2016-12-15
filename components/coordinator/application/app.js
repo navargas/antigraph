@@ -30,6 +30,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.text());
 app.use(bodyParser.urlencoded({extended:true}));
 app.use('/keys', require('./routes/keys.js'));
+app.use('/meta', require('./routes/meta.js'));
 
 var PORT = process.env.PORT || 80;
 

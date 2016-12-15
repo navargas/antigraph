@@ -289,6 +289,36 @@ function waterfall_exec(statements, txId, callback) {
     spawn(statements[next], txId, caller);
 }
 
+app.post('/meta', function(req, res) {
+    var asset = req.body.asset;
+    var version = req.body.version;
+    var team = req.body.team;
+    var targetPath = path.join(
+        conf.storageDir,
+        team,
+        asset,
+        version
+    );
+    fs.readdir(targetPath, function(err, files) {
+        if (err) {
+            return res.status(500).send({
+                error:fmt('Cannot read %s:%s', asset, version)
+            });
+        }
+        var filename = filterSystemFiles(files)[0];
+        var fullPath = path.join(targetPath, filename);
+        md5(fullPath, (err, sum) => {
+            res.send({
+                filename,
+                asset,
+                version,
+                team,
+                sum: 'md5:'+sum
+            });
+        });
+    });
+});
+
 app.post('/transfer', function(req, res) {
     var valid = /(?![\.]{1,2}$)[a-zA-Z0-9\_\-\.\:]+/;
     var doc = req.body;
