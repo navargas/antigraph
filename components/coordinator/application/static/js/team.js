@@ -80,12 +80,13 @@ var VMain = new Vue({
     },
     showSumModal: function(version, target) {
         target = this.assets.legend[target];
-        window.modal.open('Checksum', 'Loading... ' + target + ' ' + version);
+        var title = 'Checksum <' + this.activeAsset + ':' + version+'>';
+        window.modal.open(title, 'Loading... ' + target + ' ' + version);
         var headers = {'X-FOR-REGION':target};
         var service = encodeURIComponent(this.activeGroup);
         var asset = '/meta/'+service+'/'+this.activeAsset+'/'+version;
         this.$http.get(asset, {headers}).then(function(response) {
-            window.modal.open('Checksum', response.json().sum);
+            window.modal.open(title, response.json().sum);
         }, function(error) {
             window.modal.open('Error fetching checksum', error);
         });
