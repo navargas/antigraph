@@ -36,7 +36,8 @@
                 <td v-for="version in versionList">
                   <p v-if="offline($index)" class="redtext">check connection</p>
                   <div v-else>
-                    <span v-if="version" class="glyphicon glyphicon-ok"></span>
+                    <span v-on:click="showSumModal($parent.$key, $index)"
+                          v-if="version" class="glyphicon glyphicon-ok"></span>
                     <span v-if="version" class="glyphicon glyphicon-trash"
                           v-on:click="transfer($parent.$key, $index, true)"></span>
                     <a v-else v-on:click="transfer($parent.$key, $index)">transfer</a>
@@ -111,7 +112,7 @@
     <tr>
       <td class="dim" v-on:click.stop.prevent="toggleEmailField()">
         Add New Member
-        <form class="loginform nomargin" action="/members" 
+        <form class="loginform nomargin" action="/members"
               method="POST" v-if="showEmailForm" v-on:click.stop="">
           <input type="text" placeholder="email address" name="email" />
           <button>Submit</button>
@@ -126,7 +127,25 @@
 
 <!-- end content -->
 </div>
+
+<div id="modalBox">
+  <div id="modal" v-if="show">
+    <h4>{{ title }}</h4>
+    <textarea readonly=true v-model="textArea"></textarea>
+    <a v-on:click="close()">Close</a>
+  </div>
+</div>
+
+<script>
+document.addEventListener('click', function(event) {
+	// if modal is open and user clicks on a object that is not in modal
+	if (window.modal.show && event.target.closest('#modal')===null)
+		window.modal.show = false;
+})
+</script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.25/vue.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-resource/0.9.3/vue-resource.min.js"></script>
 <script src="/js/common.js"></script>
 <script src="/js/team.js"></script>
+<script src="/js/modal.js"></script>

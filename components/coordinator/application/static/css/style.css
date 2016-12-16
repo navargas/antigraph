@@ -122,3 +122,19 @@ button {
 .pullright {
   float: right;
 }
+#modal {
+	width: 400px;
+	position: fixed;
+	background-color: white;
+	left: calc(50% - 200px);
+  top: 20px;
+	margin: auto;
+	display: inline-block;
+	z-index: 100;
+	border: 1px solid black;
+	box-shadow: 5px 5px rgba(128, 128, 128, 0.22);
+	padding: 10px;
+}
+#modal > textarea {
+  width: 378px;
+}

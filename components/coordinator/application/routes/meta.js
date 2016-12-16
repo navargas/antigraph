@@ -49,4 +49,14 @@ router.get('/:service/:assetName/:versionName', auth.verify, function(req, res) 
     });
 });
 
+router.get('/:service/:team/:asset/:version', auth.verify, function(req, res) {
+    // If the team is included, ommit it. This data comes from the key
+    var url = fmt('/meta/%s/%s/%s',
+        req.params.service,
+        req.params.asset,
+        req.params.version
+    )
+    return res.redirect(url);
+});
+
 module.exports = router;

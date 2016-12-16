@@ -21,7 +21,6 @@ var VMain = new Vue({
       if (uriParts.length == 2) {
         this.activeGroup = uriParts[0];
         this.activeAsset = uriParts[1];
-        console.log('set to', this.activeGroup, this.activeAsset);
       }
     });
     /* Update info every UPDATE seconds */
@@ -78,6 +77,18 @@ var VMain = new Vue({
       this.$resource('/transfers/'+transferId).delete().then(function() {
         window.location.reload();
       });
+    },
+    showSumModal: function(version, target) {
+        target = this.assets.legend[target];
+        window.modal.open('Checksum', 'Loading... ' + target + ' ' + version);
+        var headers = {'X-FOR-REGION':target};
+        var service = encodeURIComponent(this.activeGroup);
+        var asset = '/meta/'+service+'/'+this.activeAsset+'/'+version;
+        this.$http.get(asset, {headers}).then(function(response) {
+            window.modal.open('Checksum', response.json().sum);
+        }, function(error) {
+            window.modal.open('Error fetching checksum', error);
+        });
     },
     transfer: function(version, destination, deleteAsset) {
       console.log(this.activeGroup, this.activeAsset, version, destination);
