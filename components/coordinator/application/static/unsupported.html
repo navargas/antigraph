@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+
+<title>Cumulus Repo</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+<link href='https://fonts.googleapis.com/css?family=Roboto:400,100,200,300'
+  rel='stylesheet' type='text/css'>
+<link rel='stylesheet' href='/css/style.css'>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.25/vue.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-resource/0.9.3/vue-resource.min.js"></script>
+
+<script src="/js/common.js"></script>
+
+<div id="modal" v-if="show">
+  <h4>Browser Error</h4>
+  <p>There was a problem rendering the page</p>
+  <p>Unsupported Feature or Error:</p>
+  <p id="feature"></p>
+  <a href="/">Reload</a>
+</div>
+
+<script>
+document.getElementById('feature').innerHTML = getCookie('unsupported');
+eraseCookie('unsupported');
+</script>

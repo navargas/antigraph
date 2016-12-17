@@ -5,7 +5,17 @@
 <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,200,300'
   rel='stylesheet' type='text/css'>
 <link rel='stylesheet' href='/css/style.css'>
-<div id="content">
+<noscript>
+  <div id="modal" v-if="show">
+    <h4>Browser Error</h4>
+    <p>There was a problem rendering the page</p>
+    <p>Unsupported Feature or Error:</p>
+    Javascript<br>Please check Javascript is not disabled
+    <p id="feature"></p>
+    <a href="/">Reload</a>
+  </div>
+</noscript>
+<div id="content" v-cloak>
 <!-- content -->
 
 <h2>Cumulus Repo V2 Beta</h2>
@@ -128,8 +138,8 @@
 <!-- end content -->
 </div>
 
-<div id="modalBox">
-  <div id="modal" v-if="show">
+<div id="modalBox" v-cloak>
+  <div id="modal" v-if="show" v-cloak>
     <h4>{{ title }}</h4>
     <textarea readonly=true v-model="textArea"></textarea>
     <a v-on:click="close()">Close</a>
@@ -147,5 +157,6 @@ document.addEventListener('click', function(event) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.25/vue.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-resource/0.9.3/vue-resource.min.js"></script>
 <script src="/js/common.js"></script>
+<script src="/js/compatibility.js"></script>
 <script src="/js/team.js"></script>
 <script src="/js/modal.js"></script>

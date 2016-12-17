@@ -630,18 +630,24 @@ app.get('/', function(req, res) {
     console.log(req.session.email, req.session.key);
     if (!req.session.key && req.cookies.apikey)
         req.session.key = req.cookies.apikey;
-    if (req.session.key) auth.getKeyDoc(req.session.key, function(err, keydoc) {
-        if (!err)
-            return res.sendFile('static/team.html' , { root : __dirname});
-        req.session.key = undefined;
-        req.session.email = undefined;
-        res.clearCookie('apikey');
-        res.sendFile('static/index.html' , { root : __dirname});
-    });
-    else if (req.session.email)
+    if (req.cookies.unsupported) {
+        res.sendFile('static/unsupported.html', {root : __dirname});
+    } else if (req.session.key) {
+        auth.getKeyDoc(req.session.key, function(err, keydoc) {
+            if (!err) {
+                res.sendFile('static/team.html' , { root : __dirname});
+            } else {
+                req.session.key = undefined;
+                req.session.email = undefined;
+                res.clearCookie('apikey');
+                res.sendFile('static/index.html' , { root : __dirname});
+            }
+        });
+    } else if (req.session.email) {
         res.sendFile('static/selectteam.html' , { root : __dirname});
-    else
+    } else {
         res.sendFile('static/index.html' , { root : __dirname});
+    }
 });
 app.use('/', express.static('static'));
 
