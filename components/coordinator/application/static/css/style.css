@@ -14,6 +14,10 @@ td {
 h1 {
   font-weight: 100;
 }
+.teamtitle {
+  color: grey;
+  font-family: monospace;
+}
 .highlightbox {
   display: block;
   width: 100%;

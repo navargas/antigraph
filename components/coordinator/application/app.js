@@ -635,6 +635,7 @@ app.get('/', function(req, res) {
     } else if (req.session.key) {
         auth.getKeyDoc(req.session.key, function(err, keydoc) {
             if (!err) {
+                res.cookie('team', keydoc.team, {maxAge: 1000*60*60*356});
                 res.sendFile('static/team.html' , { root : __dirname});
             } else {
                 req.session.key = undefined;

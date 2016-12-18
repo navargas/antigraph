@@ -31,12 +31,7 @@ var VMain = new Vue({
         this.activeAsset = uriParts[1];
       }
     }, showError);
-    /* Update info every UPDATE seconds */
-    /*setInterval(function() {
-      assets.get().then(function(response) {
-        Vue.set(this.assets, 'items', response.json());
-      });
-    }, UPDATE);*/
+    this.teamName = getCookie('team');
   },
   methods: {
     toggleAllTransfers: function() {
@@ -140,6 +135,7 @@ var VMain = new Vue({
     }
   },
   data: {
+    teamName: '',
     errorMsg: false,
     transfers: null,
     activeGroup: null,
