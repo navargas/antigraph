@@ -1,4 +1,10 @@
 var UPDATE=1000 * 5;//ms
+
+function showError(errorMessage) {
+  console.error(errorMessage)
+  window.modal.open('Error', JSON.stringify(errorMessage, null, 2));
+}
+
 var VMain = new Vue({
   el: '#content',
   ready: function() {
@@ -13,8 +19,10 @@ var VMain = new Vue({
     this.errorMsg = getParameterByName('error');
     transfers.get().then(function(response) {
       this.transfers = response.json();
-    });
-    members.get().then(function(response) {this.members = response.json()});
+    }, showError);
+    members.get().then(function(response) {
+      this.members = response.json()
+    }, showError);
     assets.get().then(function(response) {
       this.assets = response.json();
       var uriParts = location.hash.slice(1).split(':');
@@ -22,7 +30,7 @@ var VMain = new Vue({
         this.activeGroup = uriParts[0];
         this.activeAsset = uriParts[1];
       }
-    });
+    }, showError);
     /* Update info every UPDATE seconds */
     /*setInterval(function() {
       assets.get().then(function(response) {
@@ -38,7 +46,7 @@ var VMain = new Vue({
       var that = this;
       transfers.get().then(function(response) {
         Vue.set(that, 'transfers', response.json());
-      });
+      }, showError);
     },
     offline: function(index) {
       for (var ix in this.assets.offline) {
@@ -55,9 +63,7 @@ var VMain = new Vue({
       var that = this;
       this.$resource('/members/'+member).remove().then(function(response) {
         Vue.set(that, 'members', response.json());
-      }, function(error) {
-        alert(JSON.stringify(error.json()));
-      });
+      }, showError);
     },
     toggleEmailField: function() {
       this.showEmailForm = !this.showEmailForm;
@@ -76,7 +82,7 @@ var VMain = new Vue({
     hideTransfer: function(transferId) {
       this.$resource('/transfers/'+transferId).delete().then(function() {
         window.location.reload();
-      });
+      }, showError);
     },
     showSumModal: function(version, target) {
         target = this.assets.legend[target];
@@ -87,9 +93,7 @@ var VMain = new Vue({
         var asset = '/meta/'+service+'/'+this.activeAsset+'/'+version;
         this.$http.get(asset, {headers}).then(function(response) {
             window.modal.open(title, response.json().sum);
-        }, function(error) {
-            window.modal.open('Error fetching checksum', error);
-        });
+        }, showError);
     },
     transfer: function(version, destination, deleteAsset) {
       console.log(this.activeGroup, this.activeAsset, version, destination);
@@ -124,12 +128,14 @@ var VMain = new Vue({
       }
       this.$resource('/transfers').save(obj).then(function() {
         window.location.reload();
-      });
+      }, showError);
     },
     deleteteam: function() {
       var t = confirm('Are you sure you wish to delete this team?');
       if (t) {
-        this.$resource('/team').delete().then(function(){window.location='/signout'});
+        this.$resource('/team').delete().then(function(){
+          window.location='/signout'
+        }, showError);
       }
     }
   },
