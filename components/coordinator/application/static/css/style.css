@@ -135,6 +135,9 @@ button {
   box-shadow: 5px 5px rgba(128, 128, 128, 0.22);
   padding: 10px;
 }
+#modal > pre {
+  background-color: white;
+}
 #modal > textarea {
   width: 378px;
 }

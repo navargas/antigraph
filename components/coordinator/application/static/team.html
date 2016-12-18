@@ -141,7 +141,7 @@
 <div id="modalBox" v-cloak>
   <div id="modal" v-if="show" v-cloak>
     <h4>{{ title }}</h4>
-    <textarea readonly=true v-model="textArea"></textarea>
+    <pre readonly=true>{{textBox}}</pre>
     <a v-on:click="close()">Close</a>
   </div>
 </div>

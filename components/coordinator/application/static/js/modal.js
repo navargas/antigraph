@@ -6,13 +6,13 @@ window.modal = new Vue({
     },
     open: function(title, text) {
         this.title = title;
-        this.textArea = text;
+        this.textBox = text;
         this.show = true;
     }
   },
   data: {
     title: "def",
-    textArea: "abc",
+    textBox: "abc",
     show: false
   }
 });
