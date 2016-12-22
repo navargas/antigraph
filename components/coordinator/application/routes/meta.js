@@ -25,7 +25,7 @@ router.get('/:service/:assetName/:versionName', auth.verify, function(req, res) 
         request(sReqDetails, function(error, sRes, body) {
             if (error)
                 return res.status(500).send(error);
-            res.send(body);
+            res.status(sRes.statusCode).send(body);
         });
         return;
     }
@@ -45,7 +45,7 @@ router.get('/:service/:assetName/:versionName', auth.verify, function(req, res) 
     request(sReqDetails, function(error, sRes, body) {
         if (error)
             return res.status(500).send(error);
-        res.send(body);
+        res.status(sRes.statusCode).send(body);
     });
 });
 
