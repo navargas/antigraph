@@ -68,16 +68,19 @@ def execute_download(module):
     wgetStatusCode=0
     curlStatusCode=0
     # Perform the actual download with wget
-    wgetStatusCode = subprocess.call([
-        'wget', '--header', apikey,
-        '--content-disposition',
-        url, '-P', tmpPath
-    ])
+    optionalFilename = module.params.get('filename')
+    if optionalFilename:
+        fullWgetPath = os.path.join(tmpPath, optionalFilename)
+        wgetCmd = ['wget', '--header', apikey, '-O', fullWgetPath, url]
+    else:
+        wgetCmd= ['wget', '--header', apikey, '--content-disposition', url, '-P', tmpPath]
+    wgetStatusCode = subprocess.call(wgetCmd)
     if wgetStatusCode != 0:
-        curlStatusCode = subprocess.call([
-            'curl', '-H', apikey,
-            '-O', '-J', url
-        ], cwd=tmpPath)
+        if optionalFilename:
+            curlCmd = ['curl', '-H', apikey, '-o', optionalFilename, url]
+        else:
+            curlCmd = ['curl', '-H', apikey, '-O', '-J', url]
+        curlStatusCode = subprocess.call(curlCmd, cwd=tmpPath)
     # check for success
     if curlStatusCode != 0 and wgetStatusCode != 0:
         os.rmdir(tmpPath);
@@ -94,6 +97,8 @@ def execute_download(module):
     tmpFileSum = md5(tmpFilePath)
     # targetFileSum is used to decide if the system state has changed
     targetFileSum = None
+    if not os.path.exists(dest):
+        os.makedirs(dest)
     if os.path.isfile(dest):
         targetFileSum = md5(dest)
     elif os.path.isdir(dest):
@@ -114,10 +119,10 @@ def execute_download(module):
     else:
         dirname = os.path.dirname(dest)
         if not os.path.exists(dirname):
-            os.path.makedirs(dirname)
+            os.makedirs(dirname)
         os.rename(tmpFilePath, dest)
         shutil.rmtree(tmpPath)
-        msg = 'File replaced with new sum md5:{0}'.format(tmpFileSum)
+        msg = 'File replaced/created with new sum md5:{0}'.format(tmpFileSum)
         return (msg, True, False)
 
 def main():
@@ -131,6 +136,7 @@ def main():
             dest = dict(default='./'),
             sha256sum = dict(default=''),
             checksum = dict(default=''),
+            filename = dict(default=''),
             timeout = dict(required=False, type='int', default=10),
             repo_domain=dict(default='cumulusrepo.com'),
             repo_port=dict(default='443'),
