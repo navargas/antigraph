@@ -130,8 +130,21 @@ var VMain = new Vue({
         delete: deleteAsset,
         target: this.assets.legend[destination]
       }
-      this.$resource('/transfers').save(obj).then(function() {
-        window.location.reload();
+      this.$resource('/transfers').save(obj).then(function(resp) {
+        var moreInfo = '/transfers/' + resp.json().transferId + '?format=html';
+        var desc;
+        if (obj.delete)
+          desc = 'Deleting ' + obj.asset + ':' + obj.version +
+                 ' from ' + obj.source;
+        else
+          desc = 'Transfering ' + obj.asset + ':' + obj.version +
+                 ' from ' + obj.source + ' to ' + obj.target;
+        window.modal.open('New Action Request Submitted', desc,
+          {text: 'More Info', action:function() {
+            var win = window.open(moreInfo, '_blank');
+            win.focus();
+          }}
+        );
       }, showError);
     },
     deleteteam: function() {

@@ -623,6 +623,7 @@ app.post('/transfers', auth.verify, function(req, res) {
         console.log('New Transfer', transferDoc);
         // remove key and echo doc
         transferDoc.key = undefined;
+        transferDoc.transferId = value.id;
         res.status(200).send(transferDoc);
     });
 });
