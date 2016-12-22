@@ -15,6 +15,9 @@
   Deletion of {{transfer.info.asset}} ({{transfer.info.version}})
 </h1>
 <h1 v-else>Transfer of {{transfer.info.asset}} ({{transfer.info.version}})</h1>
+<p>
+  Last updated {{ secondsSince }} seconds ago
+</p>
 <div class="highlightbox">
   <div>{{transfer.info.source}}</div>
   <div v-if="transfer.info.delete" class="glyphicon glyphicon-trash"></div>
@@ -60,8 +63,22 @@ var VMain = new Vue({
   ready: function() {
     var that = this;
     transfer.get().then(function(response) {
+      that.lastUpdated = Date.now();
       Vue.set(that, 'transfer', response.json());
     });
+    var interval;
+    interval = setInterval(function() {
+      that.secondsSince = Math.round((Date.now() - that.lastUpdated) / 1000);
+      if (that.secondsSince >= 10) {
+        that.secondsSince = 0
+        that.lastUpdated = Date.now();
+        transfer.get().then(function(response) {
+          Vue.set(that, 'transfer', response.json());
+        }, function() {
+          clearInterval(interval);
+        });
+      }
+    }, 1000);
   },
   methods: {
     openItem: function(obj) {
@@ -73,7 +90,9 @@ var VMain = new Vue({
     }
   },
   data: {
-    transfer: undefined
+    transfer: undefined,
+    secondsSince: 0,
+    lastUpdated: 0
   }
 });
 </script>
