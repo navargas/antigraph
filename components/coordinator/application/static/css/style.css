@@ -139,8 +139,20 @@ button {
   box-shadow: 5px 5px rgba(128, 128, 128, 0.22);
   padding: 10px;
 }
+#modal > .closebutton {
+  float: right;
+  position: absolute;
+  margin-right: 1em;
+  bottom: 11px;
+  right: 0px;
+}
 #modal > pre {
   background-color: white;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+#modal > button {
+  margin: 2px;
 }
 #modal > textarea {
   width: 378px;

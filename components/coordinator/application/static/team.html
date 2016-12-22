@@ -141,16 +141,21 @@
 <div id="modalBox" v-cloak>
   <div id="modal" v-if="show" v-cloak>
     <h4>{{ title }}</h4>
-    <pre readonly=true>{{textBox}}</pre>
-    <a v-on:click="close()">Close</a>
+    <pre readonly=true v-if="textBox">{{textBox}}</pre>
+    <div v-if="buttons.length == 0" style="padding:10px;"></div>
+    <a class="closebutton" v-on:click="close()">Close</a>
+    <button v-for="b in buttons" v-on:click="b.action">{{b.text}}</button>
   </div>
 </div>
 
 <script>
 document.addEventListener('click', function(event) {
   // if modal is open and user clicks on a object that is not in modal
-  if (window.modal.show && event.target.closest('#modal')===null)
-    window.modal.show = false;
+  if (window.modal.show && event.target.closest('#modal')===null) {
+    // Prevent close if modal just opened
+    if (Date.now() - window.modal.lastOpen > 500)
+      window.modal.show = false;
+  }
 })
 </script>
 

@@ -5,6 +5,14 @@ function showError(errorMessage) {
   window.modal.open('Error', JSON.stringify(errorMessage, null, 2));
 }
 
+function yesNoPrompt(msg, yesCB, noCB) {
+  var empty = function() {};
+  window.modal.open(msg, false,
+    {text:'Yes', action:function() {window.modal.close(); (yesCB||empty)();}},
+    {text:'No', action:function() {window.modal.close(); (noCB||empty)();}}
+  )
+}
+
 var VMain = new Vue({
   el: '#content',
   ready: function() {
@@ -52,13 +60,14 @@ var VMain = new Vue({
     },
     removeMember: function(member) {
       console.log('Deleting', member);
-      var c = confirm('Are you sure you wish to delete ' + member + ' and ' +
-                      'all of their API Keys?');
-      if (!c) return;
+      var delPromt = 'Are you sure you wish to delete ' + member + ' and ' +
+                      'all of their API Keys?';
       var that = this;
-      this.$resource('/members/'+member).remove().then(function(response) {
-        Vue.set(that, 'members', response.json());
-      }, showError);
+      yesNoPrompt(delPromt, function() {
+        that.$resource('/members/'+member).remove().then(function(response) {
+          Vue.set(that, 'members', response.json());
+        }, showError);
+      });
     },
     toggleEmailField: function() {
       this.showEmailForm = !this.showEmailForm;
@@ -126,12 +135,11 @@ var VMain = new Vue({
       }, showError);
     },
     deleteteam: function() {
-      var t = confirm('Are you sure you wish to delete this team?');
-      if (t) {
+      yesNoPrompt('Are you sure you wish to delete this team?', function() {
         this.$resource('/team').delete().then(function(){
           window.location='/signout'
         }, showError);
-      }
+      });
     }
   },
   data: {
