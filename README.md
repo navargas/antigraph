@@ -6,6 +6,7 @@ Main node hosted at https://svl.cumulusrepo.com
 * [Create Key](#create-key)
 * [Using Docker Images](#docker)
 * [Using Files](#binary-assets)
+* [Asset Metadata](#metadata)
 * [Delete Assets](#delete)
 * [Transfer Assets](#transfer)
 * [Named Keys](#named-keys)
