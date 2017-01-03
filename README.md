@@ -106,6 +106,14 @@ The old "assets" command line tool will also work for uploading/downloading file
 assets fetch assetName:versionName
 ```
 
+# Metadata
+
+Metadata about a particular asset can be obtained from the `/meta` endpoint. Currently this includes
+md5 sum and original filename for binary assets and the sha256 tag for docker images.
+```bash
+curl -H 'X-API-KEY: key_goes_here' https://svl.cumulusrepo.com/meta/<service>/<name>/<version>/
+```
+
 # Delete
 
 Versions can either be deleted with the trash icon on the UI, or with curl:
