@@ -30,7 +30,7 @@ docker:
     links:
         - registry
 registry_adapter:
-    image: na.cumulusrepo.com/cumulus_repo/registry/adapter
+    image: na.cumulusrepo.com/cumulus_repo/registry_adapter
     environment:
         - DOCKER_HOST=tcp://docker:2375
         - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
@@ -41,7 +41,7 @@ registry_adapter:
     volumes:
         - /dockervolumes/registry-data/:/registry-data/
 repo:
-    image: na.cumulusrepo.com/cumulus_repo/repo/nginx
+    image: na.cumulusrepo.com/cumulus_repo/repo
     ports:
         - "443:9090"
     volumes:
@@ -55,7 +55,7 @@ repo:
         - registry
         - coordinator
 repo_adapter:
-    image: na.cumulusrepo.com/cumulus_repo/repo/node
+    image: na.cumulusrepo.com/cumulus_repo/repo_adapter
     volumes:
         - /dockervolumes/ssl/:/ssl/
         - /dockervolumes/asset-data/:/var/asset-data/
