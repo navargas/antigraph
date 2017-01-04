@@ -2,6 +2,7 @@
 
 Main node hosted at https://svl.cumulusrepo.com
 
+* [Recent Features and Fixes](https://github.ibm.com/cds-sre-org/cumulus-repo/wiki/Recent-Features-and-Fixes) (wiki)
 * [Mirrors](#current-mirrors)
 * [Create Key](#create-key)
 * [Using Docker Images](#docker)
