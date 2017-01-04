@@ -1,10 +1,10 @@
 authenticator:
-    build: na.cumulusrepo.com/cumulus_repo/authenticator
+    image: na.cumulusrepo.com/cumulus_repo/authenticator
     environment:
         - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
         - CLOUDANT_PASSWORD=${CLOUDANT_PASSWORD}
 coordinator:
-    build: na.cumulusrepo.com/cumulus_repo/coordinator
+    image: na.cumulusrepo.com/cumulus_repo/coordinator
     environment:
         - SERVICES=${SERVICES}
         - THISNODE=${THISNODE}
@@ -30,7 +30,7 @@ docker:
     links:
         - registry
 registry_adapter:
-    build: na.cumulusrepo.com/cumulus_repo/registry/adapter
+    image: na.cumulusrepo.com/cumulus_repo/registry/adapter
     environment:
         - DOCKER_HOST=tcp://docker:2375
         - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
@@ -41,7 +41,7 @@ registry_adapter:
     volumes:
         - /dockervolumes/registry-data/:/registry-data/
 repo:
-    build: na.cumulusrepo.com/cumulus_repo/repo/nginx
+    image: na.cumulusrepo.com/cumulus_repo/repo/nginx
     ports:
         - "443:9090"
     volumes:
@@ -55,7 +55,7 @@ repo:
         - registry
         - coordinator
 repo_adapter:
-    build: na.cumulusrepo.com/cumulus_repo/repo/node
+    image: na.cumulusrepo.com/cumulus_repo/repo/node
     volumes:
         - /dockervolumes/ssl/:/ssl/
         - /dockervolumes/asset-data/:/var/asset-data/
