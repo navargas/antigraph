@@ -1,4 +1,4 @@
-# Cumulus Repo V2 Beta
+# Cumulus Repo
 
 Main node hosted at https://svl.cumulusrepo.com
 
