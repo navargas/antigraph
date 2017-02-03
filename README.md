@@ -22,7 +22,7 @@ You can upload files and docker images to any of the URLs listed below, but keep
 
 | Location       | URL                    | Notes                                             |
 |----------------|------------------------|---------------------------------------------------|
-| San Jose SVL   |    svl.cumulusrepo.com | Cannot receive files from outside the IBM network |
+| SVL            |    svl.cumulusrepo.com | Cannot receive files from outside the IBM network |
 | CDS Dev        | cdsdev.cumulusrepo.com | Cannot receive files from outside the IBM network |
 | Western Europe |     we.cumulusrepo.com | Located in London (lon02)                         |
 | East Asia      |     ea.cumulusrepo.com | Located in Singapore (sng01)                      |
