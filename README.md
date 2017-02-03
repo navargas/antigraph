@@ -133,7 +133,7 @@ curl -H 'X-API-KEY: key_goes_here' -H "Content-Type: application/json" -d \
 Versions can either be transfered with the "transfer" button on the UI,
 or with curl:
 ```bash
-curl -H 'X-API-KEY: key_goes_here' -H "Content-Type: application/json" -d \
+curl -X POST -H 'X-API-KEY: key_goes_here' -H "Content-Type: application/json" -d \
     '{"asset":"assetName",
       "version":"assetVersion",
       "service":"Binary Repo",
