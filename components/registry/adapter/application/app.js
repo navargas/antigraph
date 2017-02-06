@@ -167,7 +167,7 @@ app.get('/list/:teamname?', function(req, res) {
         hostname: 'registry',
         port: 5000,
         method: 'GET',
-        path: '/v2/_catalog'
+        path: '/v2/_catalog?n=10000'
     };
     var getreq = http.request(httpReq, function(getres) {
         getres.setEncoding('utf8');
