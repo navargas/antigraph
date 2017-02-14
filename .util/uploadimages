@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+set -x
+
+images="coordinator registry_adapter repo_adapter authenticator repo"
+server=na.cumulusrepo.com
+prefix=antigraph
+team=cumulus_repo
+
+for i in $images; do
+  docker tag ${prefix}_${i} $server/$team/$i
+done
+
+for i in $images; do
+  docker push $server/$team/$i
+done
