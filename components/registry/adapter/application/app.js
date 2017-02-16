@@ -4,56 +4,16 @@ var bodyParser = require('body-parser');
 var fs = require('fs');
 var path = require('path');
 var db = require('./lib/db');
+var images = require('./lib/images');
 var fmt = require('util').format;
-var http = require('http');
 var app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
 
+app.use('/capacity', require('./routes/capacity'));
+
 var PORT = process.env.PORT || 80;
-
-function getTags(imageName, callback) {
-    var buffer = '';
-    var httpReq = {
-        hostname: 'registry',
-        port: 5000,
-        method: 'GET',
-        path: '/v2/'+imageName+'/tags/list'
-    };
-    var getreq = http.request(httpReq, function(getres) {
-        getres.setEncoding('utf8');
-        getres.on('data', function(chunk) {
-            buffer += chunk;
-        });
-        getres.on('end', function() {
-            var data;
-            try {
-                data = JSON.parse(buffer);
-            } catch (e) {
-                console.error(e);
-            }
-            if (callback) callback(data.tags);
-        })
-    });
-    getreq.end();
-}
-
-function getTagInfo(images, callback) {
-    if (images.length === 0) {
-        if (callback) callback([]);
-    }
-    var result = [];
-    for (var index in images) {
-        var img = images[index];
-        (function (img) {getTags(img, function(versions) {
-            result.push({name:img, versions:versions});
-            if (result.length == images.length) {
-                if (callback) callback(result);
-            }
-        })})(img);
-    }
-}
 
 function spawn(cmd, txId, callback) {
     exec(cmd, (error, stdout, stderr) => {
@@ -160,43 +120,9 @@ app.post('/transfer', function(req, res) {
 });
 
 app.get('/list/:teamname?', function(req, res) {
-    var all = (req.params.teamname === undefined);
-    var team = req.params.teamname + '/';
-    var buffer = '';
-    var httpReq = {
-        hostname: 'registry',
-        port: 5000,
-        method: 'GET',
-        path: '/v2/_catalog?n=10000'
-    };
-    var getreq = http.request(httpReq, function(getres) {
-        getres.setEncoding('utf8');
-        getres.on('data', function(chunk) {
-            buffer += chunk;
-        });
-        getres.on('end', function() {
-            var imageList;
-            var error;
-            try {
-                var list = JSON.parse(buffer).repositories;
-                if (all) {
-                    imageList = list;
-                } else {
-                    imageList = list.filter(
-                        (i) => {return i.indexOf(team) == 0});
-                }
-            } catch(e) {
-                console.error(e);
-                error = e;
-            }
-            getTagInfo(imageList, function(imageVersions) {
-                imageVersions = imageVersions.filter(
-                    (i) => {return i.versions !== null});
-                res.send({assets:imageVersions, error:error});
-            });
-        })
+    images.getImageVersions(req.params.teamname, (error, imgVers)=>{
+        res.send({assets:imgVers, error:error});
     });
-    getreq.end();
 });
 
 app.get('/accept', function(req, res) {
