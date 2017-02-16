@@ -1,4 +1,4 @@
-FROM navargas/docker:1.12.0
+FROM navargas/docker:1.12.0n6
 
 RUN npm install forever -g
 
