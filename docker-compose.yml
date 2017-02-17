@@ -29,6 +29,8 @@ docker:
     command: "--insecure-registry registry:5000"
     links:
         - registry
+    volumes:
+        - /dockervolumes/registry-tmp/:/var/lib/docker/
 registry_adapter:
     image: na.cumulusrepo.com/cumulus_repo/registry_adapter
     environment:
