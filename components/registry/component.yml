@@ -10,6 +10,8 @@ docker:
     command: "--insecure-registry registry:5000"
     links:
         - registry
+    volumes:
+        - /dockervolumes/registry-tmp/:/var/lib/docker/
 registry_adapter:
     build: ./components/registry/adapter
     environment:
