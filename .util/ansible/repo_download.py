@@ -1,7 +1,7 @@
 #!/usr/bin/python -tt
 
 # It's possible that this list will change in the future
-environments = ["na","we","ea","cdsdev", "svl"]
+environments = ["na","we","ea","cdsdev", "svl","enfield"]
 
 attempted = []
 
