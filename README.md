@@ -20,13 +20,14 @@ Main node hosted at https://svl.cumulusrepo.com
 
 You can upload files and docker images to any of the URLs listed below, but keep in mind that Cumulus Repo cannot yet transfer files *into* the IBM network. Fox example, if you upload a file initially to North America (na), it can only be transferred to Western Europe (we) or East Asia (ea), but not SVL.
 
-| Location       | URL                    | Notes                                             |
-|----------------|------------------------|---------------------------------------------------|
-| SVL            |    svl.cumulusrepo.com | Cannot receive files from outside the IBM network |
-| CDS Dev        | cdsdev.cumulusrepo.com | Cannot receive files from outside the IBM network |
-| Western Europe |     we.cumulusrepo.com | Located in London (lon02)                         |
-| East Asia      |     ea.cumulusrepo.com | Located in Singapore (sng01)                      |
-| North America  |     na.cumulusrepo.com | Located in Dallas (dal09)                         |
+| Location       | URL                     | Notes                                             |
+|----------------|-------------------------|---------------------------------------------------|
+| SVL            |    svl.cumulusrepo.com  | Cannot receive files from outside the IBM network |
+| CDS Dev        | cdsdev.cumulusrepo.com  | Cannot receive files from outside the IBM network |
+| Western Europe |     we.cumulusrepo.com  | Located in London (lon02)                         |
+| East Asia      |     ea.cumulusrepo.com  | Located in Singapore (sng01)                      |
+| North America  |     na.cumulusrepo.com  | Located in Dallas (dal09)                         |
+| Enfield	 | enfield.cumulusrepo.com | Located in Dallas (dal10) [Hydra]		       |
 
 **Note**: `svl.cumulusrepo.com` is only accessable from IBM Intranet.
 `we`, `na`, and `ea` can be accessed globally.
