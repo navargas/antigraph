@@ -28,15 +28,19 @@ module.exports.byTeam = function(teamname, callback) {
         }
         var responses = 0;
         var lastError;
+        var headers = {
+            'Accept':'application/vnd.docker.distribution.manifest.v2+json'
+        };
         for (let url of urls) {
-            request(url, (err, response, body)=>{
+            request({url, headers}, (err, response, body)=>{
                 responses++;
                 if (err) {
                     console.error(err);
                     lastError = err;
                 } else {
                     var result = JSON.parse(body);
-                    formUniqueArray(blobs, result.fsLayers.map(o=>o.blobSum));
+                    console.log(result);
+                    formUniqueArray(blobs, result.layers.map(o=>o.digest));
                 }
                 if (responses == urls.length && callback) {
                     callback(lastError, blobs);
