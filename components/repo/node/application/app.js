@@ -203,12 +203,9 @@ function fileInfoHeaders(req, res) {
             if (fileInFiles) filename = fileRequestHeader;
             res.setHeader('X-AUTH-FILENAME', filename);
             sp({
-                type:'upload',
+                type:'download',
                 from:process.env.THISNODE,
-                error: err || undefined,
-                filename: originalFilename,
                 asset: asset,
-                md5: md5sum,
                 ip: ip,
                 version: version,
                 service:'Binary Repo'
