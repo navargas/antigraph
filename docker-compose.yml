@@ -3,6 +3,8 @@ authenticator:
     environment:
         - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
         - CLOUDANT_PASSWORD=${CLOUDANT_PASSWORD}
+        - EVENTS=${EVENTS}
+        - THISNODE=${THISNODE}
 coordinator:
     image: na.cumulusrepo.com/cumulus_repo/coordinator
     environment:
@@ -13,6 +15,7 @@ coordinator:
         - DEBUG=${DEBUG}
         - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
         - CLOUDANT_PASSWORD=${CLOUDANT_PASSWORD}
+        - EVENTS=${EVENTS}
     links:
         - authenticator
         - registry_adapter
@@ -37,6 +40,8 @@ registry_adapter:
         - DOCKER_HOST=tcp://docker:2375
         - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
         - CLOUDANT_PASSWORD=${CLOUDANT_PASSWORD}
+        - EVENTS=${EVENTS}
+        - THISNODE=${THISNODE}
     links:
         - registry
         - docker
@@ -64,5 +69,7 @@ repo_adapter:
     environment:
         - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
         - CLOUDANT_PASSWORD=${CLOUDANT_PASSWORD}
+        - EVENTS=${EVENTS}
+        - THISNODE=${THISNODE}
     links:
         - authenticator
