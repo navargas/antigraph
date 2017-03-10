@@ -3,3 +3,5 @@ authenticator:
     environment:
         - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
         - CLOUDANT_PASSWORD=${CLOUDANT_PASSWORD}
+        - EVENTS=${EVENTS}
+        - THISNODE=${THISNODE}

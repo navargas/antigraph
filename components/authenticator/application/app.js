@@ -1,9 +1,10 @@
 var express = require('express');
 var bodyParser = require('body-parser');
+var sp = require('simple-post')(process.env.EVENTS);
 var fmt = require('util').format;
 
 var uriNoTeam = /^\/v2\/([a-z0-9]+(?:[._-][a-z0-9]+)*.)\/(manifests|blobs|tags)\/.*$/;
-var uriValid = /^\/v2\/([a-z0-9\-]+(?:[._-][a-z0-9]+)*.)\/([a-z0-9\-]+(?:[._-][a-z0-9]+)*.)\/(manifests|blobs|tags)\/.*$/;
+var uriValid = /^\/v2\/([a-z0-9\-]+(?:[._-][a-z0-9]+)*.)\/([a-z0-9\-]+(?:[._-][a-z0-9]+)*.)\/(manifests|blobs|tags)\/(.*)$/;
 
 var dbauth = {
     account: process.env.CLOUDANT_ACCOUNT,
@@ -181,6 +182,7 @@ function authReq(req, res) {
 
 function uriAuth(req, res) {
     var uri = req.headers['x-original-uri'];
+    var ip = req.headers['x-real-ip'];
     var method = req.headers['x-original-method'];
     if (!req.headers || !req.headers.authorization) {
         console.log('headers', req.headers);
@@ -212,27 +214,95 @@ function uriAuth(req, res) {
             return rejectAccess(req, res);
         }
         if (keydoc.readonly && (method != 'HEAD' && method != 'GET')) {
+            sp({
+                type: 'rejected_access',
+                from:process.env.THISNODE,
+                reason: 'readonly upload attempted',
+                key_used: keydoc.name,
+                ip: ip,
+                service: 'Docker Registry',
+                team: keydoc.team
+            });
             return rejectAccess(req, res);
         }
         if (!keydoc.valid) {
+            sp({
+                type: 'rejected_access',
+                from:process.env.THISNODE,
+                reason: 'invalidated key',
+                key_used: keydoc.name,
+                ip: ip,
+                service: 'Docker Registry',
+                team: keydoc.team
+            });
             return rejectAccess(req, res);
         }
         if (uri == '/v2/') {
             return res.status(201).end();
         }
         var match = uriValid.exec(uri);
+        // The team name
         var team = match[1];
+        // The image name
         var asset = match[2];
-        var service = 'docker';
+        // manifests, blobs, or tags
+        var type = match[3];
+        // the image tag, if set
+        var tag = match[4];
         if (keydoc.readonly && keydoc.whitelist && asset) {
             var approved = keydoc.whitelist.registry_adapter;
             if (!approved || approved.indexOf(asset) < 0) {
+                sp({
+                    type: 'rejected_access',
+                    from:process.env.THISNODE,
+                    reason: 'whitelist conflict',
+                    key_used: keydoc.name,
+                    ip: ip,
+                    service: 'Docker Registry',
+                    team: team,
+                    asset: asset,
+                    version: tag
+                });
                 return rejectAccess(req, res);
             }
         }
         if (keydoc.team != team) {
             console.error('Team mis-match', team, keydoc.team);
+            sp({
+                type: 'rejected_access',
+                from:process.env.THISNODE,
+                reason: 'team conflict',
+                key_used: keydoc.name,
+                ip: ip,
+                service: 'Docker Registry',
+                team: team,
+                asset: asset,
+                version: tag
+            });
             return rejectAccess(req, res);
+        }
+        // Log download or upload of manifests
+        if (type == 'manifests') {
+            if (method == 'GET') sp({
+                type: 'download',
+                from:process.env.THISNODE,
+                key_used: keydoc.name,
+                ip: ip,
+                service: 'Docker Registry',
+                team: team,
+                asset: asset,
+                version: tag
+            });
+            if (method == 'PUT') sp({
+                type: 'upload',
+                from:process.env.THISNODE,
+                key_used: keydoc.name,
+                ip: ip,
+                service: 'Docker Registry',
+                team: team,
+                asset: asset,
+                version: tag
+            });
         }
         return res.status(201).end();
     });

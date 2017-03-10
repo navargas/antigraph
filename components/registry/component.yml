@@ -18,6 +18,7 @@ registry_adapter:
         - DOCKER_HOST=tcp://docker:2375
         - CLOUDANT_ACCOUNT=${CLOUDANT_ACCOUNT}
         - CLOUDANT_PASSWORD=${CLOUDANT_PASSWORD}
+        - EVENTS=${EVENTS}
     links:
         - registry
         - docker

@@ -1,4 +1,5 @@
 var express = require('express');
+var sp = require('simple-post')(process.env.EVENTS);
 var md5 = require('md5-file');
 var fs = require('fs');
 var exec = require('child_process').exec;
@@ -34,6 +35,7 @@ function filterSystemFiles(array) {
 function uploadFileTarget(req, res) {
     var asset = req.params.assetName;
     var version = req.params.versionName;
+    var ip = req.headers['x-real-ip'];
     // x-api-key header must be set
     var key = req.headers['x-api-key'];
     if (!asset) return partails.fail(res, 'Asset name field empty');
@@ -106,6 +108,17 @@ function uploadFileTarget(req, res) {
                         if(ferr) {
                             return console.log(ferr);
                         }
+                        sp({
+                            type:'upload',
+                            from:process.env.THISNODE,
+                            error: err || undefined,
+                            filename: originalFilename,
+                            asset: asset,
+                            md5: md5sum,
+                            ip: ip,
+                            version: version,
+                            service:'Binary Repo'
+                        });
                         return res.send({
                             error: err || undefined,
                             filename: originalFilename,
@@ -124,6 +137,7 @@ function fileInfoHeaders(req, res) {
     var asset = req.params.assetName;
     var version = req.params.versionName;
     // x-api-key header must be set
+    var ip = req.headers['x-real-ip'];
     var key = req.headers['x-api-key'];
     var fileRequestHeader = req.headers['x-file-request'];
     if (!asset) return partails.fail(res, 'Asset name field empty');
@@ -188,6 +202,17 @@ function fileInfoHeaders(req, res) {
             // it is not yet determined if this should be possible
             if (fileInFiles) filename = fileRequestHeader;
             res.setHeader('X-AUTH-FILENAME', filename);
+            sp({
+                type:'upload',
+                from:process.env.THISNODE,
+                error: err || undefined,
+                filename: originalFilename,
+                asset: asset,
+                md5: md5sum,
+                ip: ip,
+                version: version,
+                service:'Binary Repo'
+            });
             res.status(201).send({
                 team:group,
                 asset:asset,

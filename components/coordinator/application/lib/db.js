@@ -1,4 +1,5 @@
 var cloudant;
+var sp = require('simple-post')(process.env.EVENTS);
 var DBNAME = 'antigraph';
 
 var dbauth = {
@@ -14,6 +15,12 @@ function connect() {
             process.exit(1);
         }
         cloudant = dbcon;
+        sp({
+            type:'new_connection',
+            error:err || undefined,
+            from:process.env.THISNODE,
+            to:dbauth.account
+        });
     });
 }
 
